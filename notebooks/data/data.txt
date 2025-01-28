@@ -1,0 +1,53 @@
+1. DevOps Engineering
+- Học phí:
++ Online: 10$
++ Offline: 20$ (bao gồm hỗ trợ trực tiếp)
+- Nội dung khóa học:
++ Tìm hiểu về quy trình CI/CD
++ Quản lý và triển khai hệ thống tự động
++ Làm việc với các công cụ Docker, Kubernetes
++ Xây dựng và tối ưu quy trình phát triển phần mềm
+
+2. Backend Development
+- Học phí:
++ Online: 20$
++ Offline: 30$ (bao gồm hỗ trợ trực tiếp)
+- Nội dung khóa học:
++ Phát triển API và microservices
++ Thiết kế cơ sở dữ liệu
++ Xử lý các bài toán về hiệu năng và bảo mật
++ Framework và công nghệ hiện đại
+
+3. Frontend Development
+- Học phí:
++ Online: 30$
++ Offline: 40$ (bao gồm hỗ trợ trực tiếp)
+- Nội dung khóa học:
++ Phát triển giao diện người dùng
++ Tối ưu trải nghiệm người dùng
++ Làm việc với các framework JavaScript hiện đại
++ Responsive design và mobile-first approach
+
+4. Điểm nổi bật
+- Thực tiễn cao
++ Tập trung vào các case study thực tế từ doanh nghiệp
++ Học viên được giải quyết các bài toán đang gặp phải trong công việc
++ Xây dựng portfolio thực tế trong quá trình học
+- Đội ngũ giảng viên chất lượng
++ Mentor với nhiều năm kinh nghiệm trong ngành
++ Đang làm việc tại các công ty công nghệ hàng đầu
++ Kinh nghiệm giảng dạy và đào tạo phong phú
+- Phương thức thanh toán linh hoạt
++ Thẻ tín dụng
++ Thanh toán an toàn và bảo mật
++ Hỗ trợ đa dạng các loại thẻ
++ Chuyển khoản ngân hàng
++ Chuyển khoản trực tiếp
++ Xác nhận nhanh chóng
++ Trả góp
+
+5. Cam kết đào tạo
+- Cập nhật kiến thức theo xu hướng công nghệ mới nhất
+- Hỗ trợ học viên trong suốt quá trình học
+- Tư vấn định hướng nghề nghiệp sau khóa học
+- Cấp chứng chỉ sau khi hoàn thành khóa học
