@@ -1,0 +1,12 @@
+langchain 
+langchain-mongodb 
+langchain-openai 
+pymongo 
+pandas
+ollama
+python-dotenv
+elasticsearch
+rank-bm25
+chromadb
+fastembed
+qdrant-client
