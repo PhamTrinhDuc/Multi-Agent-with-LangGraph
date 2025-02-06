@@ -1,0 +1,186 @@
+# https://qdrant.tech/articles/vector-search-filtering/
+
+import uuid
+import os
+import json
+import logging
+import pandas as pd
+from datasets import Dataset
+from tqdm import tqdm
+from dotenv import load_dotenv
+from fastembed import SparseTextEmbedding, TextEmbedding
+from fastembed.late_interaction import LateInteractionTextEmbedding
+from qdrant_client import QdrantClient
+from qdrant_client import models
+from qdrant_client.models import Filter
+from base import BaseVectorStorage
+load_dotenv()
+
+class QdrantEngine(BaseVectorStorage):
+    def __init__ (self, 
+                  url: str, 
+                  api_key: str,
+                  index_name: str,
+                  timeout: int=30):
+        self.client = QdrantClient(
+            url=os.getenv("QDRANT_CLOUD_ID"),
+            api_key=os.getenv("QDRANT_API_KEY"),
+            timeout=timeout
+        )
+        self.index_name = index_name
+        self.jina_model = TextEmbedding(model_name="jinaai/jina-embeddings-v2-base-en")
+        self.bm42_model = SparseTextEmbedding(model_name="Qdrant/bm25")
+        self.late_model = LateInteractionTextEmbedding(model_name="colbert-ir/colbertv2.0")
+        self.dataframe = pd.read_excel("data/data_private/data_member/data_final_NORMAL_merged.xlsx")
+
+    def _count_data(self):
+        return self.client.count(collection_name=self.index_name)
+    
+    def _delete_colection(self):
+        self.client.delete_collection(collection_name=self.index_name)
+    
+    def create_collection(self):
+        self.client.recreate_collection(
+            collection_name=self.index_name,
+            optimizers_config=models.OptimizersConfigDiff(indexing_threshold=10000),
+            hnsw_config=models.HnswConfigDiff(
+                m=32,  # Increase the number of edges per node from the default 16 to 32
+                ef_construct=200,  # Increase the number of neighbours from the default 100 to 200
+            ),
+            quantization_config=models.ScalarQuantization(
+                scalar=models.ScalarQuantizationConfig(
+                    type=models.ScalarType.INT8,
+                    quantile=0.99,
+                    always_ram=True
+                )
+            ),
+            vectors_config={
+                "jina-embeddings-v2": models.VectorParams(
+                    size=768,
+                    distance=models.Distance.COSINE,
+                ),
+                "colbertv2.0": models.VectorParams(
+                    size=128,
+                    distance=models.Distance.COSINE,
+                    multivector_config=models.MultiVectorConfig(
+                        comparator=models.MultiVectorComparator.MAX_SIM,
+                    )
+                ),
+            },
+            sparse_vectors_config={
+                "bm25": models.SparseVectorParams(
+                    modifier=models.Modifier.IDF,
+                )
+            }
+        )
+
+
+    def upsert(self):
+
+        batch_size = 4
+        dataset = Dataset.from_pandas(self.dataframe, preserve_index=False)
+        for batch in tqdm(dataset.iter(batch_size=batch_size), total=len(dataset) // batch_size):
+
+            dense_embedding = list(self.jina_model.embed(documents=batch['group_name']))
+            bm42_embedding = list(self.bm42_model.embed(documents=batch['group_name']))
+            late_embedding = list(self.late_model.embed(documents=batch['group_name']))
+
+            self.client.upload_points(
+                collection_name=self.index_name,
+                points= [
+                    models.PointStruct(
+                        id=uuid.uuid4().hex,
+                        
+                        payload={
+                            'product_info_id': batch['product_info_id'][i],
+                            'group_product_name': batch['group_product_name'][i],
+                            'product_name': batch['product_name'][i],
+                            'price': batch['lifecare_price'][i],
+                            'short_description': batch['short_description'][i],
+                            'specifications': batch['specifications'][i],
+                            'file_path': batch['file_path'][i],
+                            'power': batch['power'][i],
+                            'weight': batch['weight'][i],
+                            'volume': batch['volume'][i]
+                        },
+                        vector={
+                            "jina-embeddings-v2": dense_embedding[i].tolist(),
+                            "bm25": bm42_embedding[i].as_object(),
+                            "colbertv2.0": late_embedding[i].tolist()
+                        },
+                    ) for i, _ in enumerate(batch["group_name"])
+                ],
+                batch_size=batch_size
+            )
+
+    def update_payload(self):
+        for idx, row in self.dataframe.iterrows():
+            metadata = {
+                'product_info_id': row['product_info_id'],
+                "group_product_name": row['group_product_name'],
+                'product_name': row['product_name'],
+                'price': row['lifecare_price'],
+                'short_description': row['short_description'],
+                'specifications': row['specifications'],
+                'file_path': row['file_path'],
+                'power': row['power'],
+                'weight': row['weight'],
+                'volume': row['volume']
+
+            }
+            self.client.overwrite_payload(
+                collection_name=self.index_name,
+                payload=metadata,
+            )
+        
+    def query(self, query: str,):
+        
+        sparse_embedding = list(self.bm42_model.embed(documents=query))[0]
+        dense_embedding = list(self.jina_model.embed(documents=query))[0]
+        late_embedding = list(self.late_model.embed(documents=query))[0]
+
+        search_result = self.client.query_points(
+            collection_name=self.index_name,
+            prefetch=[
+                models.Prefetch(query=sparse_embedding.as_object(), using="bm25", limit=5),
+                models.Prefetch(query=dense_embedding.tolist(), using="jina-embeddings-v2", limit=5),
+                models.Prefetch(query=late_embedding.tolist(), using="colbertv2.0", limit=5),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF), # <--- Combine the scores of the two embeddings
+            query_filter=Filter(
+                must=[
+                    models.FieldCondition(
+                        key="group_product_name", 
+                        match=models.MatchValue(value="đèn năng lượng mặt trời")),
+
+                    models.FieldCondition(
+                        key="price",
+                        range=models.Range(
+                            gte=3000000,
+                            lte=5000000
+                        )
+                    )
+                ],
+            ),
+            score_threshold=None,
+            with_payload=True,
+            with_vectors=False,
+            limit=5,
+        ).points
+        return search_result
+
+    def _format_output(self, output_qdrant: list):
+        outtext = ""
+        for index, point in enumerate(output_qdrant):
+            point = json.loads(json.dumps(point.dict(), indent=4))
+            payload = point['payload']
+            outtext +=  f"""
+                {index+1}. "id": {payload['product_info_id']},
+                "product_name": {payload['product_name']},
+                "price": {payload['price']} \n"""
+        return outtext
+
+if __name__ == "__main__":
+    query = "bán cho tôi Bộ Lưu Trữ Năng Lượng Mặt Trời SUNTEK 12V/25Ah PLUS" 
+    engine = QdrantEngine()
+    engine.testing(query=query)
