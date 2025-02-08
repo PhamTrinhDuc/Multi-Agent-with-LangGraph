@@ -1,3 +1,5 @@
+from config import AragProduct
+
 PROMPT_TOOLS = {
     "order": """Hữu ích khi khách hàng thảo luận về việc mua bán, giá cả, chốt đơn... sản phẩm, 
                 hoăc có thể có các cụm sau: [đặt hàng, chốt đơn, thanh toán, giao hàng, vận chuyển, 
@@ -16,5 +18,56 @@ PROMPT_TOOLS = {
                 hoặc những câu hỏi mang tính real-time"""
 }
 
-PROMPT_SYSTEM = """
-"""
+FUNC_CALL_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_specifications",
+            "description": """Lấy ra loại hoặc tên sản phẩm và các thông số kỹ thuật của sản phẩm có trong câu hỏi. Sử dụng khi câu hỏi có thông tin về 1 trong các các thông số [loại hoặc tên sản phẩm,  giá, cân nặng, công suất hoặc dung tích]""",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "group": {
+                        "type": "string",
+                        "description": f"""lấy ra nhóm sản phẩm có trong câu hỏi từ list: {AragProduct.LIST_GROUP_NAME}. 
+                        Chỉ trả ra tên group có trong list đã cho trước"""
+                    },
+                    "object": {
+                        "type": "string",
+                        "description": "tên hoặc loại sản phẩm có trong câu hỏi. Ví dụ: điều hòa, điều hòa MDV 9000BTU, máy giặt LG ...",
+                    },
+                    "price": {
+                        "type": "string",
+                        "description": "giá của sản phẩm có trong câu hỏi. Ví dụ : 1 triệu, 1000đ, ...",
+                    },
+                    "power": {
+                        "type": "string", 
+                        "description": "công suất của sản phẩm có trong câu hỏi. Ví dụ : 5W, 9000BTU, ..."
+                    },
+                    "weight": {
+                        "type": "string", 
+                        "description": "cân nặng của sản phẩm có trong câu hỏi. Ví dụ : 1 cân, 10kg, 20 gam, ..."
+                    },
+                    "volume": {
+                        "type": "string", 
+                        "description": "dung tích của sản phẩm có trong câu hỏi. Ví dụ : 1 lít, 3 mét khối ..."
+                    },
+                    "intent": {
+                        "type": "string",
+                        "description": "ý định của người dùng khi hỏi câu hỏi. Ví dụ: mua, tìm hiểu, so sánh, ..."
+                    }
+                },
+                "required": ["group", "object", "price", "power", "weight", "volume", "intent"],
+            },
+        },
+    }
+]
+
+PROMPT_SYSTEM = {
+    "extract_query": '''Bạn là 1 chuyên gia extract thông tin từ câu hỏi. 
+                Hãy giúp tôi lấy các thông số kỹ thuật, tên hoặc loại của sản phẩm có trong câu hỏi
+                Lưu ý:
+                    + nếu câu hỏi hỏi về các thông số lớn, nhỏ, rẻ, đắt... thì trả ra cụm đó. 
+                    + Nếu không có thông số nào thì trả ra '' cho thông số ấy.
+                    + 1 số tên sản phẩm có chứa cả thông số thì bạn cần tách thông số đó sang trường của thông số đó'''
+}

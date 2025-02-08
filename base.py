@@ -4,10 +4,14 @@ from typing import Union, Generic, TypeVar, List, Dict, Tuple, Literal, Optional
 from abc import ABC, abstractmethod
 
 @dataclass
-class BaseVectorStorage(ABC):
+class BaseRetriever(ABC):
 
     @abstractmethod
-    async def query(self, query: str) -> List[dict]:
+    def create_client(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def query(self, query: str, *args, **kwargs) -> List[dict]:
         raise NotImplementedError
     
     @abstractmethod
@@ -18,20 +22,16 @@ class BaseVectorStorage(ABC):
         """
         raise NotImplementedError
     
-    async def index_done_callback(self):
-        "commit the storage operations after indexing"
-        pass
-
-    async def query_done_callback(self):
-        "commit the storage operations after querying"
-        pass
-
+    @abstractmethod
+    def format_output_structure(self):
+        raise NotImplementedError
+    
 
 @dataclass
-class BaseProcessData:
+class BaseDocumentStorage:
 
-    def get_metadata(self):
-        """get metadata from excel file"""
+    def create_metadata(self):
+        """create metadata from excel file"""
         raise NotImplementedError
     
     def create_document(self):
