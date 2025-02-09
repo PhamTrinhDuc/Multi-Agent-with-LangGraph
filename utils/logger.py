@@ -9,8 +9,8 @@ sys.path.append(str(Path(__file__).parent))
 class LoggingConfig:
     ROOT_DIR = Path(__file__).parent # cd to root folder
 
-    SOURCE_DIR = ROOT_DIR / "src" # cd to src folder
-    LOG_DIR = SOURCE_DIR / "logs"
+    # SOURCE_DIR = ROOT_DIR / "src" # cd to src folder
+    LOG_DIR = ROOT_DIR / "logs"
 
 LoggingConfig.LOG_DIR.mkdir(parents=True, exist_ok=True) # create logs folder in src 
 

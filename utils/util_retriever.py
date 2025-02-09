@@ -24,3 +24,8 @@ def parse_string_to_dict(input_string: str) -> dict:
     except (SyntaxError, ValueError) as e:
         return f"Error: Invalid input string - {str(e)}"
     
+def get_keywords():
+    pass 
+
+def parse_specification_range():
+    pass 
