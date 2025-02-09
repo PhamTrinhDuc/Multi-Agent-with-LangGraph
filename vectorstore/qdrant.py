@@ -175,7 +175,7 @@ class QdrantQueryEngine(BaseRetriever):
         return response_structured
 
 
-    def format_output_structure(self, output_qdrant: list):
+    def format_output_structure(self, output_qdrant: list) -> str:
         outtext = ""
         for index, point in enumerate(output_qdrant):
             point = json.loads(json.dumps(point.dict(), indent=4))
