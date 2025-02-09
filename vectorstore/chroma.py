@@ -1,52 +1,70 @@
 import os
-import dotenv
-from chromadb import Client
+import pandas as pd
+from uuid import uuid4
 from typing import List, Dict, Any
 from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
 from langchain.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.embeddings import Embeddings
-dotenv.load_dotenv()
 
 from base import BaseRetriever
+from utils.logger import Logger
+
+LOGGER = Logger(name=__file__, log_file="chroma_db_retriever.log")
+
 
 class EnsembleQueryEngine(BaseRetriever):
-    _COLLECTION_NAME_ = "chroma_ensemble"
     def __init__(self, 
                  embedder: Embeddings, 
-                 documents: Document, 
+                 df: pd.DataFrame,
                  weights_ensemble: List[float],
-                 db_persist_path: str="./data/chroma_db"):
+                 db_persist_path: str="./data/db/chroma_db"):
         """
         Args: 
             embedder: embedding model 
-            documents: excel data convert to Document 
+            df: dataframe 
             weights_ensemble: weights for each search type [similarity, bm25, mmr]
             db_persist_path: db storage directory
 
         """
         super().__init__()
         self.embeder = embedder
-        self.documents = documents
+        self.df = df
         self.weights_ensemble = weights_ensemble
         self.db_persist_path = db_persist_path
 
         self.client = Chroma(
-            collection_name=self._COLLECTION_NAME_, 
             embedding_function=embedder, 
             persist_directory=db_persist_path
         )
-        self.upsert()
+        self.documents = self.upsert()
 
     def upsert(self):
+        documents = []
+        for _, row in self.df.iterrows():
+            content = (
+                f"Tên sản phẩm: '{row['product_name']}'\n"
+                f"Mã sản phẩm: {row['product_info_id']}\n"
+                f"Giá: {row['lifecare_price']}\n"
+                f"Thông số kỹ thuật: {row['specifications']}\n"
+            )
+            metadata = {col: row[col] for col in row.index} 
+            documents.append(Document(page_content=content, metadata=metadata))
+        
+        ids = [str(uuid4()) for _ in range(len(documents))]
+        
         if not os.path.exists(self.db_persist_path):
             return self.client.from_documents(
+                ids=ids,
                 collection_name=self._COLLECTION_NAME_,
-                documents=self.documents,
+                documents=documents,
                 embedding=self.embeder,
                 persist_directory=self.db_persist_path
             )
+        LOGGER.log.info(msg="Upsert data to vector db successfull!")
+        return documents
+    
 
     def _create_bm25_retriever(self, top_k: int=3) -> BM25Retriever:
         """Create BM25 retriever"""
@@ -71,7 +89,6 @@ class EnsembleQueryEngine(BaseRetriever):
             custom: search_kwargs = {'k': 3, 'lambda_mult': 0.25, 'filter': {"product_name": "Dieu_hoa"}}
         """
         
-
         filter_default = {'k': top_k, 'lambda_mult': lambda_mult, 'fetch_k': fetch_k}
         if filter_search is not None:
             filter_default['filter'] = filter_search
@@ -92,7 +109,7 @@ class EnsembleQueryEngine(BaseRetriever):
         filter search: Filter by document metadata
 
         >>> examples:  
-            default: search_kwargs = {'k': 3, 'score_threshold': 0.75}
+            default: search_kwargs = {'k': 3, 'score_threshold': 0.6}
             custom: search_kwargs = {'k': 3, 'score_threshold': 0.25, 'filter': {"product_name": "Dieu_hoa"}}
         """
         filter_default = {'k': top_k, 'score_threshold': score_threshold}
@@ -124,24 +141,31 @@ class EnsembleQueryEngine(BaseRetriever):
         """
         bm25_retriever = self._create_bm25_retriever(top_k=top_k)
 
-        vanilla_retriever = self._create_vanilla_retriever(top_k=top_k,
-                                                           score_threshold=score_threshold,
-                                                           filter_search=filter_search)
-        
+        # vanilla_retriever = self._create_vanilla_retriever(top_k=top_k,
+        #                                                    score_threshold=score_threshold,
+        #                                                    filter_search=filter_search)
         mmr_retriever = self._create_mmr_retriever(top_k=top_k, 
                                                    fetch_k=fetch_k,
                                                    lambda_mult=lambda_mult,
                                                    filter_search=filter_search)
 
         ensemble_retriever=  EnsembleRetriever(
-            retrievers=[vanilla_retriever, bm25_retriever, mmr_retriever],
+            retrievers=[ bm25_retriever, mmr_retriever],
             weights=self.weights_ensemble
         )
         return ensemble_retriever
     
+
+    def _create_filter_search(self, demands: Dict[str, Any]):
+        filter = {
+            "group_product_name": demands['group']
+        }
+
+        return filter
+
     def query(self, 
               query: str, 
-              filter_search: Dict[str, Any]=None,
+              demands: Dict[str, Any]=None,
               **params_search):
         """
         Get relevant context for a query about a specific product
@@ -153,17 +177,14 @@ class EnsembleQueryEngine(BaseRetriever):
         Returns:
             Relevant context for the query
         """
+        filter_search = None
+        if demands is not None:
+            filter_search = self._create_filter_search(demands=demands)
 
         retriever = self._build_ensemble_retriever(filter_search=filter_search, 
                                                   **params_search)
+        LOGGER.log.info("Create ensemble retriever successfull!")
+
         contents = retriever.invoke(input=query)
         return "\n".join(doc.page_content for doc in contents)
 
-def main():
-    retriever = EnsembleQueryEngine(embedder=, documents=, weights_ensemble=, db_persist_path=)
-    response = retriever.query(query=, filter_search=, **params_search)
-    print(response)
-
-
-if __name__ == "__main__":
-    main()
