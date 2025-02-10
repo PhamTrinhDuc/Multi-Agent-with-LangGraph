@@ -42,8 +42,8 @@ FUNC_CALL_TOOLS = [
                     },
                     "power": {
                         "type": "string", 
-                        "description": "công suất của sản phẩm có trong câu hỏi. Ví dụ : 5W, 9000BTU, ..."
-                    },
+                        "description": "công suất của sản phẩm có trong câu hỏi. Ví dụ : 5W, 9000BTU, ...",
+                    },  
                     "weight": {
                         "type": "string", 
                         "description": "cân nặng của sản phẩm có trong câu hỏi. Ví dụ : 1 cân, 10kg, 20 gam, ..."
@@ -65,9 +65,9 @@ FUNC_CALL_TOOLS = [
 
 PROMPT_SYSTEM = {
     "extract_query": '''Bạn là 1 chuyên gia extract thông tin từ câu hỏi. 
-                Hãy giúp tôi lấy các thông số kỹ thuật, tên hoặc loại của sản phẩm có trong câu hỏi
-                Lưu ý:
-                    + nếu câu hỏi hỏi về các thông số lớn, nhỏ, rẻ, đắt... thì trả ra cụm đó. 
-                    + Nếu không có thông số nào thì trả ra '' cho thông số ấy.
-                    + 1 số tên sản phẩm có chứa cả thông số thì bạn cần tách thông số đó sang trường của thông số đó'''
+        Hãy giúp tôi lấy các thông số kỹ thuật, tên, group của sản phẩm có trong câu hỏi
+        Lưu ý:
+            + Với các thông số không có giá trị của thể mà có các cụm như: lớn, đắt, to nhất... thì trả về BIGGEST ngược lại trả về SMALLEST 
+            + Nếu không có thông số nào thì trả ra '' cho thông số ấy.
+            + 1 số tên sản phẩm có chứa cả thông số thì bạn cần tách giá trị đó sang trường của thông số đó'''
 }
