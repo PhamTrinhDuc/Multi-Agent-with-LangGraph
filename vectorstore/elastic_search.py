@@ -6,11 +6,12 @@ from dataclasses import dataclass
 from elasticsearch import Elasticsearch
 from base import BaseRetriever
 from utils.logger import Logger
-from utils.util_elastic import get_keywords, parse_specification_range
+from utils.util_retriever import get_keywords, parse_specification_range
 from config import AragProduct
+from config import ArgsElastic
+
 
 LOGGER = Logger(name=__file__, log_file="elastic_retriever.log")
-NUM_SIZE_ELASTIC = AragProduct.NUM_SIZE_ELASTIC
 LIST_GROUP_PRODUCT = AragProduct.LIST_GROUP_NAME
 
 
@@ -18,18 +19,18 @@ dataclass
 class ElasticQueryEngine(BaseRetriever):
     cloud_id: str
     api_key: str
-    timeout: int
-    index_name: str
+    df: pd.DataFrame
+    index_name: str="elastic_retriever"
+    timeout: int=30
+    config = ArgsElastic()
 
-    def __post_init__(self, 
-                      dataframe: pd.DataFrame):
-        
-        self.dataframe = dataframe
+    def __post_init__(self):
         self.client = Elasticsearch(
             cloud_id=self.cloud_id,
             api_key=self.api_key,
             timeout=self.timeout
         )
+
     def upsert(self):
         # mapping data type pandas to els 
         dtype_mapping = {
@@ -80,7 +81,8 @@ class ElasticQueryEngine(BaseRetriever):
 
     def create_elastic_query(
             self,
-            product: str, product_name: str, 
+            group_product: str, 
+            product_name: str, 
             price: Optional[str] = None,
             power: Optional[str] = None,
             weight: Optional[str] = None,
@@ -94,7 +96,6 @@ class ElasticQueryEngine(BaseRetriever):
         Args:
             product (str): Tên nhóm sản phẩm chính.
             product_name (str): Tên cụ thể của sản phẩm.
-            specifications (Optional[str]): Thông số kỹ thuật của sản phẩm (không được sử dụng trong hàm hiện tại).
             price (Optional[str]): Giá sản phẩm, có thể bao gồm từ khóa sắp xếp.
             power (Optional[str]): Công suất sản phẩm, có thể bao gồm từ khóa sắp xếp.
             weight (Optional[str]): Trọng lượng sản phẩm, có thể bao gồm từ khóa sắp xếp.
@@ -114,29 +115,37 @@ class ElasticQueryEngine(BaseRetriever):
             "query": {
                 "bool": {
                     "must": [
-                        {"match": {"group_product_name": product}},
+                        {"match": {"group_product_name": group_product}},
                         {"match": {"group_name": product_name}}
                     ]
                 }
             },
-            "size": NUM_SIZE_ELASTIC
+            "size": self.config.top_k
         }
 
-        for field, value in [('lifecare_price', price), ('power', power), ('weight', weight), ('volume', volume)]:
+        for field, value in [('lifecare_price', price), 
+                             ('power', power), 
+                             ('weight', weight), 
+                             ('volume', volume)]:
+
             if value:  # Nếu có thông số cần filter
-                order, word, _value = get_keywords(value)
-                if word: # Nếu cần search lớn nhất, nhỏ nhất, min, max
+                if "BIGGEST" in value:
                     query["sort"] = [
-                        {field: {"order": order}}
+                        {field: {"order": "desc"}}
                     ]
-                    value = _value
+
+                elif "SMALLEST" in value:
+                    query["sort"] = [
+                        {field: {"order": "asc"}}
+                    ]
+
                 query['query']['bool']['must'].append(self.create_filter_range(field, value))
         
+        # không hỏi thong số -> mặc định search theo sản phẩm bán chạy nhất
         if all(param == '' for param in (power, weight, volume, price)):
             query['sort'] = [
                 {"sold_quantity": {"order": "desc"}}
             ]
-            value = ""
         return query
 
     def bulk_search_products(self, queries: List[Dict]) -> List[Dict]:
@@ -168,14 +177,16 @@ class ElasticQueryEngine(BaseRetriever):
             - trả về câu trả lời, list chứa thông tin sản phẩm, và số lượng sản phẩm tìm thấy
         """
         group_product = demands.get("group", '')
-        product_name = demands.get('object', '')
-        price = demands.get('price', '')
 
         queries = []
         if group_product in LIST_GROUP_PRODUCT:
             query = self.create_elasticsearch_query(
-                group_product, product_name, demands.get('specifications'),
-                price, demands.get('power'), demands.get('weight'), demands.get('volume')
+                group_product, 
+                demands.get("product_name"), 
+                demands.get("price"), 
+                demands.get('power'), 
+                demands.get('weight'), 
+                demands.get('volume')
             )
             queries.append(query)
         
