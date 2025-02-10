@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from elasticsearch import Elasticsearch
 from base import BaseRetriever
 from utils.logger import Logger
-from utils.util_retriever import get_keywords, parse_specification_range
+from utils.util_retriever import parse_specification_range
 from config import AragProduct
 from config import ArgsElastic
 
@@ -15,11 +15,11 @@ LOGGER = Logger(name=__file__, log_file="elastic_retriever.log")
 LIST_GROUP_PRODUCT = AragProduct.LIST_GROUP_NAME
 
 
-dataclass
+@dataclass
 class ElasticQueryEngine(BaseRetriever):
     cloud_id: str
     api_key: str
-    df: pd.DataFrame
+    dataframe: pd.DataFrame
     index_name: str="elastic_retriever"
     timeout: int=30
     config = ArgsElastic()
@@ -30,6 +30,13 @@ class ElasticQueryEngine(BaseRetriever):
             api_key=self.api_key,
             timeout=self.timeout
         )
+
+        if self._count_data() <= 0:
+            self.upsert()
+
+    def _count_data(self):
+        num_data = self.client.count(index=self.index_name)['count']
+        return num_data
 
     def upsert(self):
         # mapping data type pandas to els 
@@ -52,12 +59,13 @@ class ElasticQueryEngine(BaseRetriever):
                     self.client.index(index=self.index_name, id=i, document=doc)
 
                 self.client.indices.refresh(index=self.index_name)
+
+                LOGGER.log.info("Upsert data to Elastic search client successfull!")
             else:
                 pass
         except Exception as e:
             LOGGER.log.error(f"An error occurred while connecting to Elastic Search: {str(e)}")
         
-
     def create_filter_range(self, field: str, value: str) -> Dict:
         """
         Hàm này tạo ra filter range cho câu query.
@@ -180,9 +188,9 @@ class ElasticQueryEngine(BaseRetriever):
 
         queries = []
         if group_product in LIST_GROUP_PRODUCT:
-            query = self.create_elasticsearch_query(
+            query = self.create_elastic_query(
                 group_product, 
-                demands.get("product_name"), 
+                demands.get("object"), 
                 demands.get("price"), 
                 demands.get('power'), 
                 demands.get('weight'), 
@@ -192,15 +200,15 @@ class ElasticQueryEngine(BaseRetriever):
         
         if len(queries) < 1:
             return None, []
-        
-        results = self.bulk_search_products(queries)
-        out_text = ""
-        products_info = []
+        print("queries: ", queries)
 
-        for product_name, result in zip(product_name, results):
-            for i, hit in enumerate(result['hits']['hits'][:4]):
+        results = self.bulk_search_products(queries)
+
+        out_text, products_info = "", [] 
+        for result in results:
+            for i, hit in enumerate(result['hits']['hits']):
                 product_details = hit['_source']
-                out_text += self.format_product_output(i, product_details)
+                out_text += self.format_output_structure(i, product_details)
                 products_info.append({
                     "product_info_id": product_details['product_info_id'],
                     "product_name": product_details['product_name'],
