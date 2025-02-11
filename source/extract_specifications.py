@@ -3,8 +3,8 @@ import dotenv
 from openai import OpenAI
 from groq import Groq
 from typing import Literal
-from utils import parse_string_to_dict, Logger
-from prompt import PROMPT_SYSTEM, FUNC_CALL_TOOLS
+from source.utils import parse_string_to_dict, Logger
+from source.prompt import PROMPT_SYSTEM, FUNC_CALL_TOOLS
 
 dotenv.load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
@@ -36,7 +36,7 @@ def extract_info(query_user: str,
         else:
             client = OpenAI()
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4o",
                 messages=messages,
                 tools=tools_calling,
                 tool_choice="auto",  # auto is default, but we'll be explicit

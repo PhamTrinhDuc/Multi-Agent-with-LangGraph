@@ -4,12 +4,9 @@ from collections import defaultdict
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
 from elasticsearch import Elasticsearch
-from base import BaseRetriever
-from utils.logger import Logger
-from utils.util_retriever import parse_specification_range
-from config import AragProduct
-from config import ArgsElastic
-
+from source.base import BaseRetriever
+from source.utils import parse_specification_range, Logger
+from source.config import AragProduct, ArgsElastic
 
 LOGGER = Logger(name=__file__, log_file="elastic_retriever.log")
 LIST_GROUP_PRODUCT = AragProduct.LIST_GROUP_NAME

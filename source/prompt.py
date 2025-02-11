@@ -1,4 +1,4 @@
-from config import AragProduct
+from source.config import AragProduct
 
 PROMPT_TOOLS = {
     "order": """Hữu ích khi khách hàng thảo luận về việc mua bán, giá cả, chốt đơn... sản phẩm, 

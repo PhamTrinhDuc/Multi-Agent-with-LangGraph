@@ -1,7 +1,6 @@
 langchain 
-langchain-mongodb 
 langchain-openai 
-pymongo 
+langchain-groq
 pandas
 ollama
 python-dotenv

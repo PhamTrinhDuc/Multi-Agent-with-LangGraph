@@ -9,9 +9,9 @@ from langchain.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.embeddings import Embeddings
 
-from base import BaseRetriever
-from utils import Logger
-from config import ArgChroma
+from source.base import BaseRetriever
+from source.utils import Logger
+from source.config import ArgChroma
 
 LOGGER = Logger(name=__file__, log_file="chroma_retriever.log")
 
@@ -171,3 +171,5 @@ class EnsembleQueryEngine(BaseRetriever):
         contents = retriever.invoke(input=query)
         return "\n".join(doc.page_content for doc in contents)
 
+    def _drop_db(self, path_db: str):
+        os.remove(path=path_db)

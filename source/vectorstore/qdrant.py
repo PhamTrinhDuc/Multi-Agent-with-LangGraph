@@ -13,13 +13,11 @@ from qdrant_client import models
 from dataclasses import dataclass
 load_dotenv()
 
-from base import BaseRetriever
-from utils import Logger
-from config import ArgQdrant
-
+from source.base import BaseRetriever
+from source.utils import Logger
+from source.config import ArgQdrant
 
 LOGGER = Logger(name=__file__, log_file="qdrant_retriever.log")
-
 
 @dataclass
 class QdrantQueryEngine(BaseRetriever):
@@ -86,6 +84,7 @@ class QdrantQueryEngine(BaseRetriever):
     def upsert(self, batch_size: int=4):
         num_data = self._count_data()
         if num_data > 0:
+            LOGGER.log.info("The data has been uploaded to Qdrant!")
             return
         
         dataset = Dataset.from_pandas(self.df, preserve_index=False)
