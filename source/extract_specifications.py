@@ -3,8 +3,8 @@ import dotenv
 from openai import OpenAI
 from groq import Groq
 from typing import Literal
-from source.utils import parse_string_to_dict, Logger
-from source.prompt import PROMPT_SYSTEM, FUNC_CALL_TOOLS
+from utils import parse_string_to_dict, Logger
+from prompt import PROMPT_SYSTEM, FUNC_CALL_TOOLS
 
 dotenv.load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")

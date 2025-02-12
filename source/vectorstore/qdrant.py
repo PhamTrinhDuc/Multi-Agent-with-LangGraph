@@ -13,9 +13,9 @@ from qdrant_client import models
 from dataclasses import dataclass
 load_dotenv()
 
-from source.base import BaseRetriever
-from source.utils import Logger
-from source.config import ArgQdrant
+from base import BaseRetriever
+from utils import Logger
+from config import ArgQdrant
 
 LOGGER = Logger(name=__file__, log_file="qdrant_retriever.log")
 

@@ -5,7 +5,7 @@ from typing import Annotated
 dotenv.load_dotenv()
 from langchain.tools import BaseTool
 from langchain_community.tools.tavily_search import TavilySearchResults
-from source.prompt import PROMPT_TOOLS
+from prompt import PROMPT_TOOLS
 
 os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
 
@@ -34,5 +34,4 @@ search = TavilySearchResults(
     name="search_web", 
     description = PROMPT_TOOLS['search_web'], 
     max_results=3, 
-    return_direct=True
 )

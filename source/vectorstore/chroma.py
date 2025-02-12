@@ -9,9 +9,9 @@ from langchain.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.embeddings import Embeddings
 
-from source.base import BaseRetriever
-from source.utils import Logger
-from source.config import ArgChroma
+from base import BaseRetriever
+from utils import Logger
+from config import ArgChroma
 
 LOGGER = Logger(name=__file__, log_file="chroma_retriever.log")
 

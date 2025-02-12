@@ -1,5 +1,6 @@
 langchain 
 langchain-openai 
+langchain-community
 langchain-groq
 pandas
 ollama
@@ -9,3 +10,5 @@ rank-bm25
 chromadb
 fastembed
 qdrant-client
+openpyxl
+datasets

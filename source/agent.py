@@ -5,7 +5,7 @@ dotenv.load_dotenv()
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-from source.tools import (
+from tools import (
     ProductOrderTool,
     ProductSearchTool,
     GeneralInfoTool,
@@ -36,17 +36,3 @@ agent = create_openai_functions_agent(
     prompt=prompt,
 )
 
-agent_excutor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-)
-
-question = "Việt nam có bao nhiêu dân tộc"
-
-tool_result = (agent.invoke({"input": question, "intermediate_steps": []}))
-print(tool_result.tool)
-# results = agent_excutor.invoke({
-#     "input": question,
-# })
-
-# print(results)
