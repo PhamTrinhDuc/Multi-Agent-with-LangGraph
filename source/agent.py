@@ -1,18 +1,15 @@
 import os
 import dotenv
-import pandas as pd
 dotenv.load_dotenv()
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.agents import AgentExecutor, create_openai_functions_agent
-from langchain_openai import ChatOpenAI
+from langchain.agents import create_openai_functions_agent
 from tools import (
     ProductOrderTool,
     ProductSearchTool,
     GeneralInfoTool,
     search,
 )
-
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+from models import create_llm
 
 
 system_message = "Bạn là 1 chatbot bán hàng hữu ích. Hãy dựa vào câu hỏi của người dùng để trả lời."
@@ -22,11 +19,7 @@ prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="agent_scratchpad"),
 ])
 
-model = ChatOpenAI(
-    temperature=0.5, 
-    streaming=True, 
-    model="gpt-4o-mini",
-)
+model = create_llm(llm_type="openai")
 
 tools=[ProductSearchTool(), ProductOrderTool(), GeneralInfoTool(), search]
 

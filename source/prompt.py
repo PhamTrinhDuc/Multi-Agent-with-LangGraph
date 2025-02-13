@@ -69,5 +69,8 @@ PROMPT_SYSTEM = {
         Lưu ý:
             + Với các thông số không có giá trị của thể mà có các cụm như: lớn, đắt, to nhất... thì trả về BIGGEST ngược lại trả về SMALLEST 
             + Nếu không có thông số nào thì trả ra '' cho thông số ấy.
-            + 1 số tên sản phẩm có chứa cả thông số thì bạn cần tách giá trị đó sang trường của thông số đó'''
+            + 1 số tên sản phẩm có chứa cả thông số thì bạn cần tách giá trị đó sang trường của thông số đó''',
+    "system_prompt": """
+    
+    """    
 }

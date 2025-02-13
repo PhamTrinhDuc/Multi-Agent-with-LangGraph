@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 
 @dataclass
 class AragProduct:
-    # PRODUCTION
     DATA_PATH: str = "data/300productions.xlsx"
     LIST_GROUP_NAME = pd.unique(pd.read_excel(DATA_PATH)['group_product_name'].tolist())
     CACHE_PATH: str = "data/cache/sqlite.db"

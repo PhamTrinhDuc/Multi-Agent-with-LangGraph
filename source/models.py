@@ -1,4 +1,4 @@
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_groq import ChatGroq
 from langchain_community.callbacks.manager import get_openai_callback
 from langchain_community.cache import SQLiteCache
@@ -9,11 +9,17 @@ import langchain
 langchain.llm_cache = SQLiteCache(database_path=AragProduct.CACHE_PATH)
 
 
-def create_llm(llm_type: Literal['groq', 'openai']):
+def create_llm(llm_type: Literal['groq', 'openai'], model_name: str):
     
     if llm_type == 'openai':
-        llm = ChatOpenAI(model="gpt-4o-mini")
+        llm = ChatOpenAI(model=model_name)
     else:
-        llm = ChatGroq(model="llama-3.3-70b-specdec")
+        llm = ChatGroq(model=model_name)
 
     return llm
+
+
+def create_embedder(embedder_type: Literal['openai']):
+    if embedder_type == 'openai': 
+        embedder = OpenAIEmbeddings(model="text-embedding_ada-002")
+        return embedder

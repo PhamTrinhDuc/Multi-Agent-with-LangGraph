@@ -22,26 +22,3 @@ class BaseRetriever(ABC):
     def format_output_structure(self, *args, **kwargs) -> str:
         """Reponse retriever's output"""
         raise NotImplementedError
-    
-
-@dataclass 
-class BaseKVStorage(ABC):
-
-    @abstractmethod
-    async def all_keys(self) -> List[str]:
-        """Get all keys in current data"""
-        raise NotImplementedError
-    
-    @abstractmethod
-    async def get_by_id(self, id: str) -> Union[Any, None]:
-        """Get data by id from current data"""
-        raise NotImplementedError
-    
-    @abstractmethod
-    async def filter_keys(self, data: List[str]) -> set[str]:
-        """Get keys in data that not in current data"""
-        raise NotImplementedError
-    
-    @abstractmethod
-    async def upsert(self, data: Dict[str, Any]):
-        raise NotImplementedError
