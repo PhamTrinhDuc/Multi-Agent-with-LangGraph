@@ -3,8 +3,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class AragProduct:
-    DATA_PATH: str = "data/300productions.xlsx"
-    LIST_GROUP_NAME = pd.unique(pd.read_excel(DATA_PATH)['group_product_name'].tolist())
+    DATA_PATH: str = "product_variant.csv"
+    LIST_GROUP_NAME = pd.unique(pd.read_csv(DATA_PATH)['category_name'].tolist())
     CACHE_PATH: str = "data/cache/sqlite.db"
     
 @dataclass

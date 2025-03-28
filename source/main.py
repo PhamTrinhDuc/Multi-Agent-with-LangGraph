@@ -15,14 +15,17 @@ from typing import Literal
 
 def respose_chatbot(df: pd.DataFrame, 
                     question: str, 
-                    search_type: Literal["elasticsearch", "qdrant", "chroma"], 
-                    llm_type: Literal['groq', 'openai']): 
+                    search_type: Literal["elasticsearch", "qdrant", "chroma"]="qdrant", 
+                    llm_type: Literal['groq', 'openai']='openai', 
+                    model_name: str = "gpt-4o-mini"): 
 
     tool_result = agent.invoke({"input": question, 
                                 "intermediate_steps": []})
     tool_name = tool_result.tool
+    print(tool_name)
 
-    llm = create_llm(llm_type=llm_type)
+    llm = create_llm(llm_type=llm_type, 
+                     model_name=model_name)
     embedder = create_embedder(embedder_type=llm_type)
 
     if search_type == 'elasticsearch': 
@@ -54,7 +57,15 @@ def respose_chatbot(df: pd.DataFrame,
     prompt =  f"""Trả lời câu hỏi: {question} dựa vào thông tin được cung cấp: 
     context: {context}         
     """
-    print(prompt)
 
     response = llm.invoke(input=prompt)
-    print(response.content)
+    return response.content
+
+def main():
+    df = pd.read_excel(AragProduct.DATA_PATH)
+    question = "Tôi muốn mua điều hòa Inveter 9000 BTU không"
+    response = respose_chatbot(df=df, question=question)
+    print(response)
+
+if __name__ == '__main__':
+    main()    

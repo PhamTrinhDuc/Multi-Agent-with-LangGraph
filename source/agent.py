@@ -19,7 +19,7 @@ prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="agent_scratchpad"),
 ])
 
-model = create_llm(llm_type="openai")
+model = create_llm(llm_type="openai", model_name='gpt-4o-mini')
 
 tools=[ProductSearchTool(), ProductOrderTool(), GeneralInfoTool(), search]
 

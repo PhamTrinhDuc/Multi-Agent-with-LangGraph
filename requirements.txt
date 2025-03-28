@@ -3,7 +3,6 @@ langchain-openai
 langchain-community
 langchain-groq
 pandas
-ollama
 python-dotenv
 elasticsearch
 rank-bm25
@@ -11,4 +10,7 @@ chromadb
 fastembed
 qdrant-client
 openpyxl
-datasets
+psycopg2
+sqlalchemy
+
+

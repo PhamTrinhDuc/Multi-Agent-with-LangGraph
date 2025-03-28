@@ -9,9 +9,9 @@ from langchain.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.embeddings import Embeddings
 
-from base import BaseRetriever
-from utils import Logger
-from config import ArgChroma
+from source.base import BaseRetriever
+from source.utils import Logger
+from source.config import ArgChroma
 
 LOGGER = Logger(name=__file__, log_file="chroma_retriever.log")
 
@@ -41,15 +41,16 @@ class EnsembleQueryEngine(BaseRetriever):
         documents = []
         for _, row in self.df.iterrows():
             content = (
-                f"Tên sản phẩm: '{row['product_name']}'\n"
-                f"Mã sản phẩm: {row['product_info_id']}\n"
-                f"Giá: {row['lifecare_price']}\n"
-                f"Thông số kỹ thuật: {row['specifications']}\n"
+                f"Tên sản phẩm: '{row['name']}'\n"
+                f"Giá: {row['price']}\n"
+                f"Thông số kỹ thuật: {row['specification']}\n"
+                f"Đặc điểm nổi bật: {row['description']}\n"
             )
             metadata = {col: row[col] for col in row.index} 
             documents.append(Document(page_content=content, metadata=metadata))
         
         ids = [str(uuid4()) for _ in range(len(documents))]
+        print(documents[0])
         
         if not os.path.exists(self.config.db_persist_path):
             return self.client.from_documents(
@@ -143,9 +144,8 @@ class EnsembleQueryEngine(BaseRetriever):
 
     def _create_filter_search(self, demands: Dict[str, Any]):
         filter = {
-            "group_product_name": demands['group']
+            "category_name": demands['group']
         }
-
         return filter
 
     def query(self, 

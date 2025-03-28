@@ -5,7 +5,7 @@ from typing import Annotated
 dotenv.load_dotenv()
 from langchain.tools import BaseTool
 from langchain_community.tools.tavily_search import TavilySearchResults
-from prompt import PROMPT_TOOLS
+from source.prompt import PROMPT_TOOLS
 
 os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
 
