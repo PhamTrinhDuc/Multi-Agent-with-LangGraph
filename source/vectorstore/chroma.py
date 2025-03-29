@@ -5,8 +5,7 @@ from typing import List, Dict, Any
 from dataclasses import dataclass
 from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
-from langchain.retrievers import EnsembleRetriever
-from langchain_community.retrievers import BM25Retriever
+from langchain.memory import ConversationBufferMemory
 from langchain_core.embeddings import Embeddings
 
 from source.base import BaseRetriever
@@ -87,8 +86,8 @@ class ChromaQueryEngine(BaseRetriever):
             k=self.config.top_k,
             filter=filter_search,
         )
-        for res in results:
-            print(f"* {res.page_content} [{res.metadata}]")
+        # for res in results:
+        #     print(f"* {res.page_content} [{res.metadata}]")
 
         return "\n".join(doc.page_content for doc in results)
 
