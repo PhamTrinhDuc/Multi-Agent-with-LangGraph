@@ -10,28 +10,32 @@ from typing import Literal
 import json
 
 
-
 def save_history(question: str, response: str, user_id: str):
-    body = [
-        [
-            {"role": "user", "content": question},
-            {"role": "assistant", "content": response}
-        ]
+    entry = [
+        {"role": "user", "content": question},
+        {"role": "assistant", "content": response}
     ]
-    with open(f"./history/{user_id}.json", 'a', encoding='utf-8') as f:
-        json.dump(body, f, ensure_ascii=False, indent=4)
+    try:
+        with open(f"./history/{user_id}.json", 'r', encoding='utf-8') as f:
+            history = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        history = []
 
+    history.append(entry)
 
+    with open(f"./history/{user_id}.json", 'w', encoding='utf-8') as f:
+        json.dump(history, f, ensure_ascii=False, indent=4)
 
 def load_history(user_id: str):
     try:
         with open(f"./history/{user_id}.json", 'r', encoding='utf-8') as f:
             try:
-                history = json.load(f)[:3][::-1]
+                history = json.load(f)[-3:][::-1]
                 return history
             except json.JSONDecodeError:
                 return []
     except FileNotFoundError:
+        
         return []
 
 
@@ -46,7 +50,6 @@ def rewrite_history(query, llm, user_id: str):
     print(f"Prompt: {prompt}")
     rewrited = llm.invoke(prompt)
     return rewrited.content
-
 
 
 def respose_chatbot(df: pd.DataFrame, 
@@ -70,7 +73,6 @@ def respose_chatbot(df: pd.DataFrame,
     demands =  extract_info(query_user=question, 
                                 type_client=llm_type)
     context = search_engine.query( query=question, demands=demands)
-
 
     prompt =  PROMPT_SYSTEM['prompt_sys'].format(
         question=question,

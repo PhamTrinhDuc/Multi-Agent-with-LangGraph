@@ -1,15 +1,12 @@
 [
-    [
-        {
-            "role": "user",
-            "content": "Bên bạn có bán điện thoại không ?"
-        },
-        {
-            "role": "assistant",
-            "content": "Chào bạn! 😊 Rất vui được giúp đỡ bạn. Hiện tại bên mình có một số mẫu điện thoại Samsung Galaxy S23 cực kỳ chất lượng! 📱✨\n\nDưới đây là một số tùy chọn cho bạn:\n\n1. **Samsung Galaxy S23 64GB/256GB/512GB**  \n   - **Giá:** 746.82 USD  \n   - **Màu sắc:** Gold, Blue, Space Gray  \n   - **RAM:** 32GB  \n   - **Đặc điểm nổi bật:** Các tính năng cao cấp và hiệu suất vượt trội! 🌟   \n\n2. **Samsung Galaxy S23 64GB/256GB**  \n   - **Giá:** 1046.81 USD  \n   - **Màu sắc:** Black, White, Green  \n   - **RAM:** 4GB  \n   - **Đặc điểm nổi bật:** Thiết kế sang trọng với hiệu suất mạnh mẽ! 🌈  \n\n3. **Samsung Galaxy S23 64GB/512GB**  \n   - **Giá:** 796.43 USD  \n   - **Màu sắc:** Silver, Space Gray  \n   - **RAM:** 8GB  \n   - **Đặc điểm nổi bật:** Đp ứng nhu cầu sử dụng cao với bộ nhớ lớn! 🚀  \n\nBạn có hứng thú với mẫu nào không? Hoặc nếu cần thêm thông tin gì, hãy cho mình biết nhé! ❤️"
-        }
-    ]
-][
+    {
+        "role": "user",
+        "content": "Bên bạn có bán điện thoại không ?"
+    },
+    {
+        "role": "assistant",
+        "content": "Chào bạn! 😊 Rất vui được giúp đỡ bạn. Hiện tại bên mình có một số mẫu điện thoại Samsung Galaxy S23 cực kỳ chất lượng! 📱✨\n\nDưới đây là một số tùy chọn cho bạn:\n\n1. **Samsung Galaxy S23 64GB/256GB/512GB**  \n   - **Giá:** 746.82 USD  \n   - **Màu sắc:** Gold, Blue, Space Gray  \n   - **RAM:** 32GB  \n   - **Đặc điểm nổi bật:** Các tính năng cao cấp và hiệu suất vượt trội! 🌟   \n\n2. **Samsung Galaxy S23 64GB/256GB**  \n   - **Giá:** 1046.81 USD  \n   - **Màu sắc:** Black, White, Green  \n   - **RAM:** 4GB  \n   - **Đặc điểm nổi bật:** Thiết kế sang trọng với hiệu suất mạnh mẽ! 🌈  \n\n3. **Samsung Galaxy S23 64GB/512GB**  \n   - **Giá:** 796.43 USD  \n   - **Màu sắc:** Silver, Space Gray  \n   - **RAM:** 8GB  \n   - **Đặc điểm nổi bật:** Đp ứng nhu cầu sử dụng cao với bộ nhớ lớn! 🚀  \n\nBạn có hứng thú với mẫu nào không? Hoặc nếu cần thêm thông tin gì, hãy cho mình biết nhé! ❤️"
+    },
     [
         {
             "role": "user",
@@ -17,7 +14,7 @@
         },
         {
             "role": "assistant",
-            "content": "Chào bạn! 😊 Rất vui được hỗ trợ bạn! Bạn muốn xem sản phẩm số 2, tức là **Samsung Galaxy S23 64GB/256GB**. Dưới đây là thông tin chi tiết:\n\n- **Giá:** 1046.81 USD 💵\n- **Màu sắc:** Black, White, Green 🎨\n- **RAM:** 4GB 📊\n- **Đặc điểm nổi bật:** Thiết kế sang trọng cùng hiệu suất mạnh mẽ, là lựa chọn lý tưởng cho những ai thích sự tinh tế và hiệu quả! 🌟\n\nMẫu điện thoại này không chỉ có vẻ ngoài đẹp mà còn đáp ứng được nhu cầu sử dụng hàng ngày, từ việc lướt web, xem phim đến chụp ảnh siêu nét! 📸\n\nNếu bạn cần thêm thông tin chi tiết hơn hoặc muốn hỏi về mẫu khác, hãy cho mình biết nhé! ❤️"
+            "content": "Chào bạn! 😊 Cảm ơn bạn đã quan tâm đến các sản phẩm của chúng tôi. Sản phẩm số 2 mà bạn muốn xem là **Samsung Galaxy S23 64GB/256GB** với những thông tin như sau:\n\n- **Giá:** 1046.81 USD\n- **Màu sắc:** Black, White, Green\n- **RAM:** 4GB\n- **Đặc điểm nổi bật:** Thiết kế sang trọng với hiệu suất mạnh mẽ! 🌈\n\nSản phẩm này rất phù hợp cho những ai yêu thích một chiếc điện thoại vừa đẹp về ngoại hình, vừa mạnh mẽ về hiệu suất. 💪 Nếu bạn cần thêm thông tin hoặc muốn so sánh với sản phẩm khác, hãy cho mình biết nhé! ❤️"
         }
     ]
 ]

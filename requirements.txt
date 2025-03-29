@@ -4,13 +4,10 @@ langchain-community
 langchain-groq
 pandas
 python-dotenv
-elasticsearch
-rank-bm25
 chromadb
-fastembed
-qdrant-client
 openpyxl
 psycopg2
 sqlalchemy
-
+fastapi
+uvicorn
 
