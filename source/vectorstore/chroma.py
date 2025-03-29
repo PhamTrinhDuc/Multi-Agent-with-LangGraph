@@ -16,7 +16,7 @@ from source.config import ArgChroma
 LOGGER = Logger(name=__file__, log_file="chroma_retriever.log")
 
 @dataclass
-class EnsembleQueryEngine(BaseRetriever):
+class ChromaQueryEngine(BaseRetriever):
     embedder: Embeddings 
     df: pd.DataFrame
     config = ArgChroma()
@@ -32,10 +32,11 @@ class EnsembleQueryEngine(BaseRetriever):
         """
 
         self.client = Chroma(
+            collection_name=self.config.collection_name,
             embedding_function=self.embedder, 
             persist_directory=self.config.db_persist_path
         )
-        self.documents = self.upsert()
+        self.upsert()
 
     def upsert(self):
         documents = []
@@ -46,101 +47,17 @@ class EnsembleQueryEngine(BaseRetriever):
                 f"Thông số kỹ thuật: {row['specification']}\n"
                 f"Đặc điểm nổi bật: {row['description']}\n"
             )
-            metadata = {col: row[col] for col in row.index} 
+            metadata = {col: row[col] for col in row.index if col not in ['name', 'price', 'specification', 'description', 'created_at', 'updated_at']} 
             documents.append(Document(page_content=content, metadata=metadata))
         
         ids = [str(uuid4()) for _ in range(len(documents))]
-        print(documents[0])
         
-        if not os.path.exists(self.config.db_persist_path):
-            return self.client.from_documents(
-                ids=ids,
-                documents=documents,
-                embedding=self.embeder,
-                persist_directory=self.config.db_persist_path
-            )
-        LOGGER.log.info(msg="Upsert data to vector db successfull!")
+        if len(os.listdir(self.config.db_persist_path)) < 2:
+            self.client.add_documents(documents=documents, ids=ids)
+            LOGGER.log.info(msg="Upsert data to vector db successfull!")
         return documents
     
 
-    def _create_bm25_retriever(self) -> BM25Retriever:
-        """Create BM25 retriever"""
-        retriever = BM25Retriever.from_documents(self.documents)
-        retriever.k = self.config.top_k
-        return retriever
-    
-    def _create_mmr_retriever(self, filter_search: Dict[str, Any]=None) -> Chroma: 
-        """
-        top_k: Amount of documents to return (Default: 3)
-        fetch_k: Amount of documents to pass to MMR algorithm (Default: 15)
-        lambda_mult: Diversity of results returned by MMR; 
-            1 for minimum diversity and 0 for maximum. (Default: 0.25)
-        filter: Filter by document metadata
-
-        >>> examples:  
-            default: search_kwargs = {'k': 3, 'lambda_mult': 0.25, 'fetch_k': 15}
-            custom: search_kwargs = {'k': 3, 'lambda_mult': 0.25, 'filter': {"product_name": "Dieu_hoa"}}
-        """
-        
-        filter_default = {'k': self.config.top_k, 
-                          'lambda_mult': self.config.lambda_mult, 
-                          'fetch_k': self.config.fetch_k}
-        if filter_search is not None:
-            filter_default['filter'] = filter_search
-
-        return self.client.as_retriever(
-            search_type="mmr",
-            search_kwargs=filter_default
-        )
-    
-    def _create_vanilla_retriever(self, filter_search: Dict[str, Any]=None) -> Chroma:
-        """
-        Create vanilla vector similarity retriever
-        top_k: Amount of documents to return (Default: 3)
-        score_threshold: Minimum relevance threshold for similarity_score_threshold
-        filter search: Filter by document metadata
-
-        >>> examples:  
-            default: search_kwargs = {'k': 3, 'score_threshold': 0.6}
-            custom: search_kwargs = {'k': 3, 'score_threshold': 0.25, 'filter': {"product_name": "Dieu_hoa"}}
-        """
-        filter_default = {'k': self.config.top_k, 
-                          'score_threshold': self.config.score_threshold}
-        
-        if filter_search is not None:
-            filter_default['filter'] = filter_search
-
-        return self.client.as_retriever(
-            search_type="similarity_score_threshold",
-            search_kwargs=filter_default
-        )
-    
-    def _build_ensemble_retriever(self, filter_search: Dict[str, Any]=None,):
-        """
-        FOR MMR ALGORITHM: 
-            fetch_k: Amount of documents to pass to MMR algorithm (Default: 15)
-            lambda_mult: Diversity of results returned by MMR; 
-                1 for minimum diversity and 0 for maximum. (Default: 0.25)
-        FOR SIMILAR ALGORITHM: 
-            score_threshold: Minimum relevance threshold for similarity_score_threshold
-        
-        weights_ensemble: weights for each search type [similarity, bm25, mmr]
-        top_k: Amount of documents to return (Default: 3)
-        filter_search: Filter by document metadata
-        """
-        bm25_retriever = self._create_bm25_retriever()
-
-        # vanilla_retriever = self._create_vanilla_retriever(top_k=top_k,
-        #                                                    score_threshold=score_threshold,
-        #                                                    filter_search=filter_search)
-        mmr_retriever = self._create_mmr_retriever(filter_search=filter_search)
-
-        ensemble_retriever=  EnsembleRetriever(
-            retrievers=[ bm25_retriever, mmr_retriever],
-            weights=self.config.weights_ensemble
-        )
-        return ensemble_retriever
-    
 
     def _create_filter_search(self, demands: Dict[str, Any]):
         filter = {
@@ -165,11 +82,15 @@ class EnsembleQueryEngine(BaseRetriever):
         if demands is not None:
             filter_search = self._create_filter_search(demands=demands)
 
-        retriever = self._build_ensemble_retriever(filter_search=filter_search)
-        LOGGER.log.info("Create ensemble retriever successfull!")
+        results = self.client.similarity_search(
+            query=query,
+            k=self.config.top_k,
+            filter=filter_search,
+        )
+        for res in results:
+            print(f"* {res.page_content} [{res.metadata}]")
 
-        contents = retriever.invoke(input=query)
-        return "\n".join(doc.page_content for doc in contents)
+        return "\n".join(doc.page_content for doc in results)
 
     def _drop_db(self, path_db: str):
         os.remove(path=path_db)

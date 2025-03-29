@@ -1,3 +1,3 @@
-from .chroma import EnsembleQueryEngine
+from .chroma import ChromaQueryEngine
 from .qdrant import QdrantQueryEngine
 from .elastic_search import ElasticQueryEngine
