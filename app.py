@@ -3,8 +3,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Form
+from fastapi import Query
 import json
-from main import respose_chatbot
+from main import response_chatbot
 import uvicorn
 
 app = FastAPI()
@@ -27,10 +28,8 @@ def load_history(user_id: str):
     except FileNotFoundError:
         return []
 
-@app.post('/conversation')
-async def post_session(
-    user_id: str = Form(...),
-):
+@app.get("/conversation")
+async def get_session(user_id: str = Query(...)):
     data = load_history(user_id=user_id)
     return data
 
@@ -43,13 +42,13 @@ async def post_session(
 # Command:
 # uvicorn app:app --host 127.0.0.1 --port 8000 --reload
 
-@app.post('/message')
+@app.get("/message")
 async def get_message(
-    user_id: str = Form(...),
-    question: str = Form(...),
+    user_id: str = Query(..., description="User ID của người dùng"),
+    question: str = Query(..., description="Câu hỏi của người dùng"),
 ):
     try:
-        response = respose_chatbot(question=question, user_id=user_id)
+        response = response_chatbot(question=question, user_id=user_id)
         return JSONResponse(status_code=200, content=response)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})

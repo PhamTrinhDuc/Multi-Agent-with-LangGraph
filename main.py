@@ -52,7 +52,7 @@ def rewrite_history(query, llm, user_id: str):
     return rewrited.content
 
 
-def respose_chatbot(question: str, 
+def response_chatbot(question: str, 
                     user_id: str,
                     llm_type: Literal['groq', 'openai']='openai', 
                     model_name: str = "gpt-4o-mini"): 
@@ -69,21 +69,32 @@ def respose_chatbot(question: str,
     search_engine = ChromaQueryEngine(embedder=embedder)
     demands =  extract_info(query_user=question, 
                                 type_client=llm_type)
-    context = search_engine.query( query=question, demands=demands)
+    print(f"Demands: {demands}")
+    
+    if demands['group'] == '':
+        prompt = PROMPT_SYSTEM['prompt_sys'].format(
+            question=query_rewrited,
+            context='',
+            history=history if history else ''
+        )
+        response = llm.invoke(input=prompt)
+        
+    else:
+        context = search_engine.query( query=question, demands=demands)
 
-    prompt =  PROMPT_SYSTEM['prompt_sys'].format(
-        question=question,
-        context=context,
-        history=history if history else '',
-    )
-    response = llm.invoke(input=prompt)
+        prompt =  PROMPT_SYSTEM['prompt_sys'].format(
+            question=query_rewrited,
+            context=context,
+            history=history if history else '',
+        )
+        response = llm.invoke(input=prompt)
     save_history(question=question, response=response.content, user_id=user_id)
     return response.content
 
 def main():
     df = pd.read_csv(AragProduct.DATA_PATH)
-    question = "Cho tôi xem sản phẩm số 2 đi ?"
-    response = respose_chatbot(df=df, question=question, user_id="0962741764")
+    question = "máy này chơi thế nào ?"
+    response = response_chatbot(question=question, user_id="0962741764")
     print(response)
 
 if __name__ == '__main__':

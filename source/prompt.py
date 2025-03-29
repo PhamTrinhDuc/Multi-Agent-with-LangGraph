@@ -69,7 +69,7 @@ PROMPT_SYSTEM = {
 
     "rewite_query": """
     Nhiệm vụ của bạn là viết rõ lại câu hỏi của người dùng từ lịch sử của họ với chatbot.
-    Lưu ý: luôn viết lại tên sản phẩm vào câu hỏi mới. Nếu không có lịch sử thì bạn không cần viết lại câu hỏi.
+    Lưu ý: luôn viết lại tên sản phẩm vào câu hỏi mới. Nếu không có lịch sử thì giữ nguyên câu hỏi, không cần viết lại.
     ###############
     Lịch sử cuộc trò chuyện trước đó: {history}
     ################

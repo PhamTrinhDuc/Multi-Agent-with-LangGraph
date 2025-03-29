@@ -41,6 +41,7 @@ def extract_info(query_user: str,
                 tools=tools_calling,
                 tool_choice="auto",  # auto is default, but we'll be explicit
             )
+            # print(response)
 
     except Exception as e:
         LOGGER.log.error(f"An error occurred while create client: [{type_client}]. Error: {str(e)}")
