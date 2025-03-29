@@ -52,8 +52,7 @@ def rewrite_history(query, llm, user_id: str):
     return rewrited.content
 
 
-def respose_chatbot(df: pd.DataFrame, 
-                    question: str, 
+def respose_chatbot(question: str, 
                     user_id: str,
                     llm_type: Literal['groq', 'openai']='openai', 
                     model_name: str = "gpt-4o-mini"): 
@@ -66,10 +65,8 @@ def respose_chatbot(df: pd.DataFrame,
     print(f"Query rewrited: {query_rewrited}")
 
     embedder = create_embedder(embedder_type=llm_type)
-
-
-    search_engine = ChromaQueryEngine(embedder=embedder, 
-                                            df=df)
+    
+    search_engine = ChromaQueryEngine(embedder=embedder)
     demands =  extract_info(query_user=question, 
                                 type_client=llm_type)
     context = search_engine.query( query=question, demands=demands)

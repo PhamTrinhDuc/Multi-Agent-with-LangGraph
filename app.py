@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Form
 import json
+from main import respose_chatbot
 import uvicorn
 
 app = FastAPI()
@@ -41,3 +42,14 @@ async def post_session(
 
 # Command:
 # uvicorn app:app --host 127.0.0.1 --port 8000 --reload
+
+@app.post('/message')
+async def get_message(
+    user_id: str = Form(...),
+    question: str = Form(...),
+):
+    try:
+        response = respose_chatbot(question=question, user_id=user_id)
+        return JSONResponse(status_code=200, content=response)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})

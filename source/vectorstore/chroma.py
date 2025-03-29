@@ -17,8 +17,9 @@ LOGGER = Logger(name=__file__, log_file="chroma_retriever.log")
 @dataclass
 class ChromaQueryEngine(BaseRetriever):
     embedder: Embeddings 
-    df: pd.DataFrame
     config = ArgChroma()
+    df_path: str = "./product_variant.csv"
+
 
     def __post_init__(self):
         """
@@ -29,7 +30,8 @@ class ChromaQueryEngine(BaseRetriever):
             db_persist_path: db storage directory
 
         """
-
+        self.df = pd.read_csv(self.df_path)
+        
         self.client = Chroma(
             collection_name=self.config.collection_name,
             embedding_function=self.embedder, 
