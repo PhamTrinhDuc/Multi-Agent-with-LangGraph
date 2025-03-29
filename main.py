@@ -8,7 +8,6 @@ from source.vectorstore import ChromaQueryEngine
 from source.config import AragProduct
 from typing import Literal
 
-
 def respose_chatbot(df: pd.DataFrame, 
                     question: str, 
                     llm_type: Literal['groq', 'openai']='openai', 
@@ -27,6 +26,7 @@ def respose_chatbot(df: pd.DataFrame,
     prompt =  f"""Trả lời câu hỏi: {question} dựa vào thông tin được cung cấp: 
     context: {context}         
     """
+
     response = llm.invoke(input=prompt)
     return response.content
 

@@ -18,7 +18,7 @@ class ArgQdrant:
 @dataclass 
 class ArgChroma:
     top_k: int=3
-    collection_name: str="chroma_db"
+    collection_name: str="example_collection"
     db_persist_path: str="data/db/chroma_db"
     weights_ensemble: list = field(default_factory=lambda: [0.5, 0.5])
     lambda_mult: float=0.25
