@@ -23,6 +23,7 @@ def extract_info(query_user: str,
         {'role': 'system', 'content': prompt_sys},
         {"role": "user", "content": query_user}]
 
+    response = None
     try:
         if type_client == 'groq':
             client = Groq()
@@ -45,11 +46,17 @@ def extract_info(query_user: str,
 
     except Exception as e:
         LOGGER.log.error(f"An error occurred while create client: [{type_client}]. Error: {str(e)}")
+        # Return default values when an error occurs
+        return {"group": "", "price_min": 0, "price_max": 0, "brand": "", "properties": ""}
 
-    arguments = response.choices[0].message.tool_calls[0].function.arguments
-    
-    specifications = parse_string_to_dict(arguments)
-    return specifications
+    # Check if response exists and has the expected structure before accessing it
+    if response and response.choices and response.choices[0].message.tool_calls:
+        arguments = response.choices[0].message.tool_calls[0].function.arguments
+        specifications = parse_string_to_dict(arguments)
+        return specifications
+    else:
+        LOGGER.log.error("Invalid response structure or empty response")
+        return {"group": "", "price_min": 0, "price_max": 0, "brand": "", "properties": ""}
 
 
 def main():

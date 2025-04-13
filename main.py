@@ -64,11 +64,18 @@ def response_chatbot(question: str,
     query_rewrited = rewrite_history(query=question, llm=llm, user_id=user_id)
     print(f"Query rewrited: {query_rewrited}")
 
-    embedder = create_embedder(embedder_type=llm_type)
-    
-    search_engine = ChromaQueryEngine(embedder=embedder)
+    if question.lower() in query_rewrited.lower():
+        prompt = PROMPT_SYSTEM['prompt_sys'].format(
+            question=query_rewrited,
+            context='',
+            history=history if history else ''
+        )
+        response = llm.invoke(input=prompt)
+        save_history(question=question, response=response.content, user_id=user_id)
+        return response.content
+
     demands =  extract_info(query_user=question, 
-                                type_client=llm_type)
+                            type_client=llm_type)
     print(f"Demands: {demands}")
     
     if demands['group'] == '':
@@ -80,6 +87,8 @@ def response_chatbot(question: str,
         response = llm.invoke(input=prompt)
         
     else:
+        embedder = create_embedder(embedder_type=llm_type)
+        search_engine = ChromaQueryEngine(embedder=embedder)
         context = search_engine.query( query=question, demands=demands)
 
         prompt =  PROMPT_SYSTEM['prompt_sys'].format(
@@ -92,9 +101,8 @@ def response_chatbot(question: str,
     return response.content
 
 def main():
-    df = pd.read_csv(AragProduct.DATA_PATH)
-    question = "máy này chơi thế nào ?"
-    response = response_chatbot(question=question, user_id="0962741764")
+    question = "chào bạn"
+    response = response_chatbot(question=question, user_id="0965491264") 
     print(response)
 
 if __name__ == '__main__':
