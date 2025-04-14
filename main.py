@@ -64,16 +64,6 @@ def response_chatbot(question: str,
     query_rewrited = rewrite_history(query=question, llm=llm, user_id=user_id)
     print(f"Query rewrited: {query_rewrited}")
 
-    if question.lower() in query_rewrited.lower():
-        prompt = PROMPT_SYSTEM['prompt_sys'].format(
-            question=query_rewrited,
-            context='',
-            history=history if history else ''
-        )
-        response = llm.invoke(input=prompt)
-        save_history(question=question, response=response.content, user_id=user_id)
-        return response.content
-
     demands =  extract_info(query_user=question, 
                             type_client=llm_type)
     print(f"Demands: {demands}")
