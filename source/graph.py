@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from loguru import logger
 from state import MainState, SearchState, CompareState, OrderState
 from models import RouterDecision, ValidateContextOutput, ComparisonResult
 from langchain_groq import ChatGroq
@@ -12,7 +13,8 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from utils.config import Config
 from extract_specs import extract_info
 from retriever import ElasticQueryEngine
-from prompt import FUNC_CALL_TOOLS, PROMPT_SYSTEM
+from tools import RetrieverTool
+from prompt import PROMPT_SYSTEM
 
 
 db_path = "./ecommerce.db"
@@ -28,7 +30,8 @@ class SearchSubGraph:
     self.llm_structured = llm.with_structured_output(ValidateContextOutput)
   
   def search_node(self, state: SearchState): 
-    demands = extract_info(query_user=state['question'].content, type_client='openai')
+    demands = extract_info(query_user=state['question'].content, type_client='openai', tool_call='search_products',)
+    demands = {**demands, "name": demands.get('product', '')}
     out_text, _ = self.retriever.query(demands=demands)
     return {"context": out_text}
   
@@ -37,16 +40,10 @@ class SearchSubGraph:
     context = state['context']
     
     messages = [
-      {
-        'role': 'system',
-        'content': PROMPT_SYSTEM['prompt_sys']
-      },
-      {
-        'role': 'user',
-        'content':f"""Câu hỏi của khách hàng: {question}.
+      SystemMessage(content=PROMPT_SYSTEM['prompt_sys']),
+      HumanMessage(content=f"""Câu hỏi của khách hàng: {question}.
                   Phần nội dung có thể liên quan đến câu hỏi: {context}
-                  """
-      }
+                  """)
     ]
     response = llm.invoke(input=messages)
     return {"messages": [response]}
@@ -74,6 +71,7 @@ class CompareSubGraph:
     try: 
       extracted_info = extract_info(query_user=question,
                                     type_client='groq', 
+                                    tool_call='compare_products',
                                     prompt_sys=PROMPT_SYSTEM['prompt_extract_compare']
                                     )
       return {**extracted_info}
@@ -94,16 +92,10 @@ class CompareSubGraph:
       product2 = retriever.query(demands=demands2)
 
       messages = [
-        {
-          'role': 'system',
-          'content': PROMPT_SYSTEM['prompt_compare']
-        },
-        {
-          'role': 'user',
-          'content': f"""
+        SystemMessage(content=PROMPT_SYSTEM['prompt_compare']),
+        HumanMessage(content=f"""
           Sản phẩm 1: {product1[1]}\n Sản phẩm 2: {product2[1]}
-          """
-        }
+          """)
       ]
 
       response = self.llm.invoke(input=messages)
@@ -136,11 +128,26 @@ class CompareSubGraph:
 
 class OrderSubGraph: 
   def __init__(self): 
-    pass
-  
+    self.llm = llm
+
   def order_node(self, state: OrderState): 
-    """Node đặt hàng - placeholder"""
-    return {"messages": ["Đơn hàng đã được tạo thành công!"]}
+    try:
+      question = state['question'].content
+      messages = [
+        SystemMessage(content=PROMPT_SYSTEM['prompt_order']),
+        HumanMessage(content=f"""Câu hỏi của khách hàng: {question}.""")
+      ]
+      agent = create_agent(
+        model=self.llm,
+        tools=[RetrieverTool(tool_call='order_product')],
+        system_prompt=PROMPT_SYSTEM['prompt_order'],
+      )
+      response = agent.invoke(input={"messages": messages})
+      return {"messages": response['messages']}
+    
+    except Exception as e:
+      logger.error(f"Error in order_node: {str(e)}")
+      raise ValueError(f"Failed to process order. {str(e)}")
   
   def init_subgraph(self):
     graph = StateGraph(OrderState)
@@ -160,6 +167,9 @@ class GraphEcommerce:
     self.store = SqliteStore(conn=conn)
     self.llm_structured = llm.with_structured_output(RouterDecision)
 
+  def summarize_node(self, state: MainState): 
+    """Tóm tắt lịch sử hội thoại để giảm thiểu token"""
+    pass  # Placeholder for future implementation
 
   def trim_messages_node(self, state: MainState): 
     print("Trimming messages...")
@@ -175,17 +185,11 @@ class GraphEcommerce:
   def supervisor_node(self, state: MainState): 
     question = state['question'].content
     history = [{'role': msg.type, 'content': msg.content} for msg in state['messages']]
-    print("History for router:", history[0])
+    print("History for router:", history)
 
     messages = [
-      {
-        'role': 'system', 
-        'content': PROMPT_SYSTEM['prompt_router'].format(history=history)
-      },
-      {
-        'role': 'user', 
-        'content': question
-      }
+      SystemMessage(content=PROMPT_SYSTEM['prompt_router'].format(history=history)),
+      HumanMessage(content=question)
     ]
     
     response = self.llm_structured.invoke(input=messages)
@@ -225,19 +229,23 @@ class GraphEcommerce:
 
 
 def main(): 
-  graph = GraphEcommerce().init_graph()
-  png_image = graph.get_graph().draw_mermaid_png()
-  with open("graph.png", "wb") as f:
-    f.write(png_image)
+  try:
+    graph = GraphEcommerce().init_graph()
+    # png_image = graph.get_graph().draw_mermaid_png()
+    # with open("graph.png", "wb") as f:
+    #   f.write(png_image)
 
-  # graph = SearchSubGraph().init_subgraph()
-  # config = {"configurable": {"thread_id": "subgraph_001"}}
-  # init_input = {
-  #   # "question": HumanMessage("Bên bạn có tai nghe không?"),
-  #   "question": HumanMessage("So sánh cái Sony với cái Apple đi")
-  # }
-  # result = graph.invoke(init_input, config=config)
-  # print("Final Result:", result)
+    # graph = SearchSubGraph().init_subgraph()
+    config = {"configurable": {"thread_id": "subgraph_001"}}
+    init_input = {
+      # "question": HumanMessage("Bên bạn có tai nghe không?"),
+      # "question": HumanMessage("So sánh cái Sony với cái Apple đi"),
+      "question": HumanMessage("Tên: Phạm Trịnh Đức. Sđt: 0961742764. Địa chỉ: 79 Nguyễn Văn Thương, Phường 25, Quận Bình Thạnh, TP.HCM."),
+    }
+    result = graph.invoke(init_input, config=config)
+    print("Final Result:", result)
+  except Exception as e:
+    logger.error(f"Error in main: {str(e)}")
 
 
 if __name__ == "__main__": 
