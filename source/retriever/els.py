@@ -1,13 +1,12 @@
-import ast
 import pandas as pd
-from collections import defaultdict
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
 from elasticsearch import Elasticsearch
-from extract_specs import extract_info
-from utils.utils import parse_specification_range
-from utils.config import Config
-from prompt import FUNC_CALL_TOOLS, PROMPT_SYSTEM
+from elasticsearch import AsyncElasticsearch
+from source.extract_specs import extract_info
+from source.utils.utils import parse_specification_range
+from source.utils.config import Config
+from source.prompt import FUNC_CALL_TOOLS, PROMPT_SYSTEM
 
 LIST_GROUP_PRODUCT = Config.LIST_GROUP_NAME
 
@@ -20,6 +19,9 @@ class ElasticQueryEngine:
     def __post_init__(self):
         self.client = Elasticsearch(
           hosts=[f"http://{Config.ELS_HOST}:{Config.ELS_PORT}"], 
+        )
+        self.async_client = AsyncElasticsearch(
+          hosts=[f"http://{Config.ELS_HOST}:{Config.ELS_PORT}"]
         )
 
         if not self._index_exists():
@@ -163,6 +165,22 @@ class ElasticQueryEngine:
         results = self.client.msearch(body=body)
         return results['responses']
 
+    async def abulk_search_products(self, queries: List[Dict]) -> List[Dict]:
+        """
+        Async version - search nhiều query trên elasticsearch.
+
+        Args:
+            - queries: list chứa các query cần search
+        Return:
+            - trả về list chứa kết quả search
+        """
+        body = []
+        for query in queries:
+            body.extend([{"index": self.index_name}, query])
+        
+        results = await self.async_client.msearch(body=body)
+        return results['responses']
+
 
     def query(self, demands: dict)-> Tuple[str, List[Dict], int]:
 
@@ -213,6 +231,54 @@ class ElasticQueryEngine:
         - Mã sản phẩm: {product_details['product_id']} 
         - Giá: {product_details['price']:,.0f} đ
         - Thông số : {product_details['specification']}\n"""
+    
+
+    async def aquery(self, demands: dict) -> Tuple[str, List[Dict], int]:
+        """
+        Async version của query - search thông tin sản phẩm trên elasticsearch.
+
+        Args:
+            - demands: dictionary chứa thông tin cần search
+        Returns:
+            - trả về câu trả lời, list chứa thông tin sản phẩm, và số lượng sản phẩm tìm thấy
+        """
+        group_product = demands.get("group", '')
+
+        queries = []
+        if group_product in LIST_GROUP_PRODUCT:
+            query = self.create_elastic_query(
+                demands.get("top_k", 5),
+                group_product,
+                demands.get("name"), 
+                demands.get("price"), 
+                demands.get('power'), 
+                demands.get('weight'), 
+                demands.get('volume')
+            )
+            queries.append(query)
+        else:
+            print(f"Group product '{group_product}' not recognized.")        
+        
+        print("queries: ", queries)
+        results = await self.abulk_search_products(queries)
+
+        out_text, products_info = "", [] 
+        for result in results:
+            for i, hit in enumerate(result['hits']['hits']):
+                product_details = hit['_source']
+                out_text += self._format_output_structure(i, product_details)
+                products_info.append({
+                    "product_id": product_details['product_id'],
+                    "product_name": product_details['name'],
+                    "price": product_details['price'],
+                    "specification": product_details['specification']
+                })
+        
+        return out_text, products_info
+    
+    async def close(self):
+        """Close async client connections"""
+        await self.async_client.close()
     
 
 if __name__ == "__main__":

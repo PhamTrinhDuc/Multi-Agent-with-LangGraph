@@ -3,7 +3,7 @@ import pandas as pd
 from dataclasses import dataclass, field
 from dotenv import load_dotenv
 
-load_dotenv("../.env")
+load_dotenv("./source/.env")
 
 @dataclass
 class Config:

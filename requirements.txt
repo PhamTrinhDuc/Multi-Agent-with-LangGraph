@@ -10,4 +10,10 @@ psycopg2
 sqlalchemy
 fastapi
 uvicorn
+pydantic
+streamlit
+requests
+loguru
+langgraph
+elasticsearch
 

@@ -1,7 +1,8 @@
-from utils.config import Config
+from source.utils.config import Config
 
-FUNC_CALL_TOOLS = [
-    {
+FUNC_CALL_TOOLS = {
+    "search_products":
+    [{
         "type": "function",
         "function": {
             "name": "search_products",
@@ -14,7 +15,7 @@ FUNC_CALL_TOOLS = [
                         "description": f"""lấy ra nhóm sản phẩm có trong câu hỏi từ list: {Config.LIST_GROUP_NAME}. 
                         Chỉ trả ra tên group có trong list đã cho trước"""
                     },
-                    "object": {
+                    "product": {
                         "type": "string",
                         "description": "tên hoặc loại sản phẩm có trong câu hỏi. Ví dụ: điều hòa, điều hòa MDV 9000BTU, máy giặt LG ...",
                     },
@@ -22,28 +23,13 @@ FUNC_CALL_TOOLS = [
                         "type": "string",
                         "description": "giá của sản phẩm có trong câu hỏi. Ví dụ : 1 triệu, 1000đ, ...",
                     },
-                    "power": {
-                        "type": "string", 
-                        "description": "công suất của sản phẩm có trong câu hỏi. Ví dụ : 5W, 9000BTU, ...",
-                    },  
-                    "weight": {
-                        "type": "string", 
-                        "description": "cân nặng của sản phẩm có trong câu hỏi. Ví dụ : 1 cân, 10kg, 20 gam, ..."
-                    },
-                    "volume": {
-                        "type": "string", 
-                        "description": "dung tích của sản phẩm có trong câu hỏi. Ví dụ : 1 lít, 3 mét khối ..."
-                    },
-                    "intent": {
-                        "type": "string",
-                        "description": "ý định của người dùng khi hỏi câu hỏi. Ví dụ: mua, tìm hiểu, so sánh, ..."
-                    }
                 },
-                "required": ["group", "object", "price", "power", "weight", "volume", "intent"],
+                "required": ["group", "product", "price"],
             },
         },
-    },
-    {
+    }],
+    "compare_products":
+    [{
         "type": "function",
         "function": {
             "name": "compare_products",
@@ -64,16 +50,34 @@ FUNC_CALL_TOOLS = [
                         "description": f"""lấy ra nhóm sản phẩm có trong câu hỏi từ list: {Config.LIST_GROUP_NAME}. 
                         Chỉ trả ra tên group có trong list đã cho trước"""
                     },
-                    "intent": {
-                        "type": "string",
-                        "description": "User muốn so sánh sản phẩm nội bộ hay bên ngoài [internal or external]"
-                    }
                 },
-                "required": ["product_1", "product_2", "intent", "group"],
+                "required": ["product_1", "product_2", "group"],
             }
         },
-    }
-]
+    }], 
+    "order_product":
+    [{
+        "type": "function",
+        "function": {
+            "name": "order_product",
+            "description": """Dùng khi user muốn đặt hàng sản phẩm. Sử dụng khi người dùng muốn đặt hàng sản phẩm""",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "group": {
+                        "type": "string",
+                        "description": f"""lấy ra nhóm sản phẩm có trong câu hỏi từ list: {Config.LIST_GROUP_NAME}."""
+                    },
+                    "product": {
+                        "type": "string",
+                        "description": "tên sản phẩm có trong câu hỏi. Ví dụ: điều hòa, điều hòa MDV 9000BTU, máy giặt LG ..."
+                    },
+                },
+                "required": ["group", "product"],
+            }
+        }
+    }]
+}
 
 
 
@@ -89,6 +93,10 @@ PROMPT_SYSTEM = {
     
     'prompt_extract_compare': '''Bạn là một trợ lý so sánh sản phẩm chuyên nghiệp.
         Từ câu hỏi của người dùng, hãy giúp tôi lấy ra tên, category, và ý định so sánh sản phẩm của người dùng.
+    ''',
+
+    'prompt_extract_order': '''Bạn là một trợ lý đặt hàng chuyên nghiệp.
+        Từ câu hỏi của người dùng, hãy giúp tôi lấy ra tên, category của sản phẩm mà người dùng muốn đặt hàng.
     ''',
 
     'prompt_sys': """
@@ -116,6 +124,14 @@ PROMPT_SYSTEM = {
     1. Bảng so sánh các thông số chính, ưu nhược điểm của từng sản phẩm
     2. Khuyến nghị sản phẩm nào phù hợp hơn dựa trên giá trị
     """,
+
+    "prompt_order": """
+    Bạn là một trợ lý đặt hàng chuyên nghiệp. Hướng dẫn khách hàng quy trình đặt hàng một cách nhanh chóng và dễ dàng.
+    Hãy xác nhận lại thông tin sản phẩm và số lượng khách hàng muốn đặt. Có thể sử dụng tool để tìm kiếm thông tin sản phẩm trước khi đặt hàng.
+    Nếu có thể, hãy cung cấp mã giảm giá hoặc ưu đãi đặc biệt để khuyến khích khách hàng hoàn tất đơn hàng.
+
+    Sau khi khách hàng xác nhận, hãy tạo 1 link để họ chuyển sang phần thanh toán đơn hàng. Link có dạng: "https://payment.example.com/order?product_id={product_id}&quantity={quantity}"
+    """
 
 
 }

@@ -1,33 +1,19 @@
 import threading
-
+from typing import Optional, Literal
+from loguru import logger
 from langchain.tools import BaseTool
-from retriever.els import ElasticQueryEngine
+from source.retriever.els import ElasticQueryEngine
+from source.extract_specs import extract_info
+from source.prompt import PROMPT_SYSTEM
 
+class RetrieverTool(BaseTool):
+    name: str = "Search_Product"
 
-class DSM5RetrievalTool(BaseTool):
-    """
-    Tool for retrieving DSM-5 diagnostic criteria and clinical information.
-
-    Uses HealthcareRetriever to perform hybrid search (keyword + semantic)
-    on DSM-5 chunks indexed in Elasticsearch.
-
-    Supports:
-    - Finding diagnostic criteria for psychiatric disorders
-    - Querying clinical information and diagnostic features
-    - Searching related information using hierarchical structure
-    - Differential diagnosis information
-    """
-
-    name: str = "DSM5"
-
-    description: str = """Tool for querying DSM-5 diagnostic criteria and clinical information.
-    Use cases:
-    - Find diagnostic criteria for a disorder (e.g., "Diagnostic criteria for autism spectrum disorder")
-    - Query clinical features and severity levels (e.g., "Diagnostic features of depression")
-    - Search differential diagnosis (e.g., "Differentiate anxiety disorder from panic disorder")
-    - Find related psychiatric disorder information
-    Input: Query about DSM-5 (e.g., "Severe autism spectrum disorder criteria")
-    Output: List of relevant sections with detailed diagnostic information
+    description: str = """
+    Sử dụng tool để này để tìm kiếm sản phẩm thông tin sản phẩm từ câu hỏi của người dùng. Trong các trường hợp: 
+    - Khi người dùng muốn tìm kiếm thông tin sản phẩm
+    - Khi người dùng muốn đặt hàng sản phẩm, nếu có thông tin sản phẩm rồi thì bỏ qua bước tìm kiếm
+    - Khi người dùng muốn so sánh sản phẩm với sản phẩm
     """
 
     class Config:
@@ -35,26 +21,16 @@ class DSM5RetrievalTool(BaseTool):
 
     def __init__(
         self,
-        embedding_model: str = "openai",  # "google" or "openai"
-        top_k: int = 5,
-        include_context: bool = True,
-        callbacks=None,
+        tool_call: Literal["search_products", "compare_products", "order_product"],
+        client: str = "groq", 
+        top_k: int = 1,
     ):
-        """
-        Initialize DSM5RetrievalTool.
-
-        Args:
-            embedding_model: Embedding model to use ("google" or "openai")
-            top_k: Number of top results to return (default: 5)
-            include_context: Whether to include related sections
-        """
         super().__init__()
 
         self._retriever = None
-        self.embedding_model = embedding_model
+        self.tool_call = tool_call
+        self.client = client
         self.top_k = top_k
-        self.include_context = include_context
-        self.callbacks = callbacks
 
     @property
     def retriever(self):
@@ -63,90 +39,47 @@ class DSM5RetrievalTool(BaseTool):
                 self._retriever = ElasticQueryEngine()
         return self._retriever
 
-    def _format_output(self, results: dict) -> list[dict]:
-        """
-        Format the retrieval results into a structured output.
-
-        Args:
-            results: Raw results from the retriever
-
-        Returns:
-            Formatted results
-        """
-        formatted_results = []
-        for item in results:
-            formatted_item = {
-                "title": item.get("title"),
-                "content": item.get("content"),
-            }
-            formatted_results.append(formatted_item)
-        return formatted_results
-
+    def _extract_query(self, query: str) -> str:
+      demands = extract_info(
+        query_user=query,
+        tool_call=self.tool_call,
+        prompt_sys=PROMPT_SYSTEM['prompt_extract_order'],
+        type_client=self.client
+      )
+      demands = {**demands, "top_k": self.top_k, "name": demands.get('product', '')}
+      return demands
+    
     def _run(self, query: str) -> str:
-        """
-        Synchronous execution of DSM-5 retrieval.
-
-        Args:
-          query: User's question about DSM-5
-            (e.g., "What are the diagnostic criteria for autism spectrum disorder?")
-
-        Returns:
-            Formatted text with relevant DSM-5 diagnostic information
-        """
         try:
+            demands = self._extract_query(query)
             # Perform hybrid search
-            results = self.retriever.invoke(
-                query=query,
-                config={
-                    "top_k": self.top_k,
-                    "include_context": self.include_context,
-                    "callbacks": self.callbacks,
-                },
-            )
-            return self._format_output(results)
+            results = self.retriever.query(demands=demands)
+            return results
 
         except Exception as e:
-            error_msg = f"Error retrieving DSM-5 information: {str(e)}"
+            error_msg = f"Error retrieving Product information: {str(e)}"
             logger.error(error_msg)
             raise ValueError(error_msg)
 
     async def _arun(self, query: str) -> str:
-        """
-        Asynchronous execution of DSM-5 retrieval.
+      try:
+          demands = self._extract_query(query)
+          # Perform async hybrid search
+          results = await self.retriever.aquery(demands=demands)
+          return results
 
-        Args:
-            query: User's question about DSM-5
-
-        Returns:
-            Formatted text with relevant DSM-5 diagnostic information
-        """
-        try:
-            # Perform async hybrid search
-            results = await self.retriever.ainvoke(
-                query=query,
-                config={
-                    "top_k": self.top_k,
-                    "include_context": self.include_context,
-                    "callbacks": self.callbacks,
-                },
-            )
-            return self._format_output(results)
-
-        except Exception as e:
-            error_msg = f"Async error retrieving DSM-5 information: {str(e)}"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
+      except Exception as e:
+          error_msg = f"Async error retrieving Product information: {str(e)}"
+          logger.error(error_msg)
+          raise ValueError(error_msg)
 
 
 if __name__ == "__main__":
-    # python -m tools.health_tool
+    # python -m tools.retriever_tool
 
-    tool = DSM5RetrievalTool(embedding_model="google", top_k=3, include_context=True)
-    query = "Rối loạn tic là gì và được phân loại như thế nào trong DSM-5?"
+    tool = RetrieverTool(top_k=2)
+    query = "Tôi muốn đặt hàng một chiếc điện thoại iPhone 13 Pro Max màu xanh dương, dung lượng 256GB"
     response = tool.invoke(input=query)
     print(f"Query: {query}\n")
-    print("Response:")
-    for idx, item in enumerate(response):
-        print(f"\nResult {idx + 1}:")
-        print(f"Title: {item['title']}")
-        print(f"Content: {item['content']}")
+    import pprint
+    pprint.pprint(response)
