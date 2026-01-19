@@ -6,9 +6,9 @@ from loguru import logger
 from openai import OpenAI
 from groq import Groq
 from typing import Literal
-from utils.utils import parse_string_to_dict
-from utils.config import Config
-from prompt import PROMPT_SYSTEM, FUNC_CALL_TOOLS
+from source.utils.utils import parse_string_to_dict
+from source.utils.config import Config
+from source.prompt import PROMPT_SYSTEM, FUNC_CALL_TOOLS
 
 def get_client(type_client: Literal["groq", 'openai']="groq"):
     if type_client == 'groq':

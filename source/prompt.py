@@ -1,4 +1,4 @@
-from utils.config import Config
+from source.utils.config import Config
 
 FUNC_CALL_TOOLS = {
     "search_products":

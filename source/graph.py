@@ -1,8 +1,6 @@
 import os
 import sqlite3
 from loguru import logger
-from state import MainState, SearchState, CompareState, OrderState
-from models import RouterDecision, ValidateContextOutput, ComparisonResult
 from langchain_groq import ChatGroq
 from langchain.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.messages.utils import (trim_messages, count_tokens_approximately)
@@ -10,11 +8,13 @@ from langchain.agents import create_agent
 from langgraph.graph import START, END, StateGraph
 from langgraph.store.sqlite import SqliteStore
 from langgraph.checkpoint.sqlite import SqliteSaver
-from utils.config import Config
-from extract_specs import extract_info
-from retriever import ElasticQueryEngine
-from tools import RetrieverTool
-from prompt import PROMPT_SYSTEM
+from source.utils.config import Config
+from source.extract_specs import extract_info
+from source.retriever import ElasticQueryEngine
+from source.tools import RetrieverTool
+from source.prompt import PROMPT_SYSTEM
+from source.state import MainState, SearchState, CompareState, OrderState
+from source.models import RouterDecision, ValidateContextOutput, ComparisonResult
 
 
 db_path = "./ecommerce.db"

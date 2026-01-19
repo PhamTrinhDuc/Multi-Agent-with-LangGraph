@@ -2,9 +2,9 @@ import threading
 from typing import Optional, Literal
 from loguru import logger
 from langchain.tools import BaseTool
-from retriever.els import ElasticQueryEngine
-from extract_specs import extract_info
-from prompt import PROMPT_SYSTEM
+from source.retriever.els import ElasticQueryEngine
+from source.extract_specs import extract_info
+from source.prompt import PROMPT_SYSTEM
 
 class RetrieverTool(BaseTool):
     name: str = "Search_Product"
