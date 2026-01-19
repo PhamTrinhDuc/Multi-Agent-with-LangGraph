@@ -14,8 +14,10 @@ __pycache__/
 *.so
 
 db
+history
 debug.ipynb
-cache  
+cache
+ecommerce.db
 
 # Distribution / packaging
 .Python

@@ -4,37 +4,43 @@ from collections import defaultdict
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
 from elasticsearch import Elasticsearch
-from base import BaseRetriever
-from utils import parse_specification_range, Logger
-from config import AragProduct, ArgsElastic
+from extract_specs import extract_info
+from utils.utils import parse_specification_range
+from utils.config import Config
+from prompt import FUNC_CALL_TOOLS, PROMPT_SYSTEM
 
-LOGGER = Logger(name=__file__, log_file="elastic_retriever.log")
-LIST_GROUP_PRODUCT = AragProduct.LIST_GROUP_NAME
-
+LIST_GROUP_PRODUCT = Config.LIST_GROUP_NAME
 
 @dataclass
-class ElasticQueryEngine(BaseRetriever):
-    cloud_id: str
-    api_key: str
-    dataframe: pd.DataFrame
-    index_name: str="elastic_retriever"
+class ElasticQueryEngine:
+    dataframe: pd.DataFrame = pd.read_csv(Config.DATA_PATH)
+    index_name: str="ecommerece"
     timeout: int=30
-    config = ArgsElastic()
 
     def __post_init__(self):
         self.client = Elasticsearch(
-            cloud_id=self.cloud_id,
-            api_key=self.api_key,
-            timeout=self.timeout
+          hosts=[f"http://{Config.ELS_HOST}:{Config.ELS_PORT}"], 
         )
 
-        if self._count_data() <= 0:
+        if not self._index_exists():
             self.upsert()
 
-    def _count_data(self):
-        num_data = self.client.count(index=self.index_name)['count']
-        return num_data
+    def _index_exists(self):
+        """Check nếu index tồn tại"""
+        try:
+            return self.client.indices.exists(index=self.index_name)
+        except Exception as e:
+            print(f"Error checking index existence: {str(e)}")
+            return False
 
+    def _count_data(self):
+        try:
+            num_data = self.client.count(index=self.index_name)['count']
+            return num_data
+        except Exception as e:
+            print(f"Error counting data: {str(e)}")
+            return 0
+    
     def upsert(self):
         # mapping data type pandas to els 
         dtype_mapping = {
@@ -57,11 +63,12 @@ class ElasticQueryEngine(BaseRetriever):
 
                 self.client.indices.refresh(index=self.index_name)
 
-                LOGGER.log.info("Upsert data to Elastic search client successfull!")
+                print("Upsert data to Elastic search client successfull!")
             else:
-                pass
+              print("Index already exists. Skipping upsert.")
         except Exception as e:
-            LOGGER.log.error(f"An error occurred while connecting to Elastic Search: {str(e)}")
+            print(f"An error occurred while connecting to Elastic Search: {str(e)}")
+            raise ValueError(f"An error occurred while connecting to Elastic Search: {str(e)}")
         
     def create_filter_range(self, field: str, value: str) -> Dict:
         """
@@ -86,49 +93,35 @@ class ElasticQueryEngine(BaseRetriever):
 
     def create_elastic_query(
             self,
+            top_k: int,
             group_product: str, 
             product_name: str, 
             price: Optional[str] = None,
             power: Optional[str] = None,
             weight: Optional[str] = None,
             volume: Optional[str] = None,) -> Dict:
-        """
-        Tạo một truy vấn Elasticsearch dựa trên các tham số đầu vào.
-
-        Hàm này tạo ra một truy vấn Elasticsearch phức tạp, bao gồm các điều kiện tìm kiếm
-        và sắp xếp dựa trên các tham số được cung cấp.
-
-        Args:
-            product (str): Tên nhóm sản phẩm chính.
-            product_name (str): Tên cụ thể của sản phẩm.
-            price (Optional[str]): Giá sản phẩm, có thể bao gồm từ khóa sắp xếp.
-            power (Optional[str]): Công suất sản phẩm, có thể bao gồm từ khóa sắp xếp.
-            weight (Optional[str]): Trọng lượng sản phẩm, có thể bao gồm từ khóa sắp xếp.
-            volume (Optional[str]): Thể tích sản phẩm, có thể bao gồm từ khóa sắp xếp.
-
-        Returns:
-            Dict: Một từ điển đại diện cho truy vấn Elasticsearch.
-
-        Note:
-            - Hàm này sử dụng hằng số NUMBER_SIZE_ELAS để giới hạn kích thước kết quả trả về.
-            - Các tham số tùy chọn (price, power, weight, volume) có thể chứa các từ khóa
-            để chỉ định thứ tự sắp xếp (ví dụ: "lớn nhất", "nhỏ nhất").
-            - Hàm get_keywords() được sử dụng để phân tích các từ khóa sắp xếp.
-            - Hàm create_filter_range() được sử dụng để tạo bộ lọc phạm vi cho các trường số.
-        """
         query = {
             "query": {
                 "bool": {
-                    "must": [
-                        {"match": {"group_product_name": group_product}},
-                        {"match": {"group_name": product_name}}
-                    ]
+                    "must": [],
+                    "should": [],
+                    "filter": []
                 }
             },
-            "size": self.config.top_k
+            "size": top_k
         }
 
-        for field, value in [('lifecare_price', price), 
+        if group_product: 
+            query["query"]["bool"]["must"].append(
+                {"match": {"category_name": group_product}}
+            )
+
+        if product_name: # nếu có tên sản phẩm
+            query["query"]["bool"]["should"] = [
+                {"match": {"name": product_name}}
+            ]
+
+        for field, value in [('price', price), 
                              ('power', power), 
                              ('weight', weight), 
                              ('volume', volume)]:
@@ -149,7 +142,7 @@ class ElasticQueryEngine(BaseRetriever):
         # không hỏi thong số -> mặc định search theo sản phẩm bán chạy nhất
         if all(param == '' for param in (power, weight, volume, price)):
             query['sort'] = [
-                {"sold_quantity": {"order": "desc"}}
+                {"quantity_stock": {"order": "desc"}}
             ]
         return query
 
@@ -171,7 +164,7 @@ class ElasticQueryEngine(BaseRetriever):
         return results['responses']
 
 
-    def query(self, demands: Dict[str, Any])-> Tuple[str, List[Dict], int]:
+    def query(self, demands: dict)-> Tuple[str, List[Dict], int]:
 
         """
         Hàm này dùng để search thông tin sản phẩm trên elasticsearch.
@@ -186,36 +179,47 @@ class ElasticQueryEngine(BaseRetriever):
         queries = []
         if group_product in LIST_GROUP_PRODUCT:
             query = self.create_elastic_query(
-                group_product, 
-                demands.get("object"), 
+                demands.get("top_k", 5),
+                group_product,
+                demands.get("name"), 
                 demands.get("price"), 
                 demands.get('power'), 
                 demands.get('weight'), 
                 demands.get('volume')
             )
             queries.append(query)
+        else:
+            print(f"Group product '{group_product}' not recognized.")        
         
-        if len(queries) < 1:
-            return None, []
         print("queries: ", queries)
-
         results = self.bulk_search_products(queries)
 
         out_text, products_info = "", [] 
         for result in results:
             for i, hit in enumerate(result['hits']['hits']):
                 product_details = hit['_source']
-                out_text += self.format_output_structure(i, product_details)
+                out_text += self._format_output_structure(i, product_details)
                 products_info.append({
-                    "product_info_id": product_details['product_info_id'],
-                    "product_name": product_details['product_name'],
-                    "file_path": product_details['file_path']
+                    "product_id": product_details['product_id'],
+                    "product_name": product_details['name'],
+                    "price": product_details['price'],
+                    "specification": product_details['specification']
                 })
         return out_text, products_info
 
-    def format_output_structure(self, index: int, product_details: Dict):
-        return f"""\n{index + 1}. Tên: '{product_details['product_name']}' 
-        - Mã sản phẩm: {product_details['product_info_id']} 
-        - Giá: {product_details['lifecare_price']:,.0f} đ
-        - Số lượng đã bán: {product_details['sold_quantity']}
-        - Thông số : {product_details['specifications']}\n"""
+
+    def _format_output_structure(self, index: int, product_details: Dict):
+        return f"""\n{index + 1}. Tên: '{product_details['name']}' 
+        - Mã sản phẩm: {product_details['product_id']} 
+        - Giá: {product_details['price']:,.0f} đ
+        - Thông số : {product_details['specification']}\n"""
+    
+
+if __name__ == "__main__":
+    retriever = ElasticQueryEngine()
+    out_text, product_info = retriever.query({
+        "group": "phone",
+        "object": "Iphone15",
+    })
+    import pprint
+    pprint.pprint(out_text)
