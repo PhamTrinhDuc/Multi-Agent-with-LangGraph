@@ -3,7 +3,7 @@ load_dotenv()
 import pandas as pd
 from source.prompt import PROMPT_SYSTEM
 from source.models import create_llm, create_embedder
-from source.extract_specifications import extract_info
+from source.extract_specs import extract_info
 from source.vectorstore import ChromaQueryEngine
 from source.config import AragProduct
 from typing import Literal

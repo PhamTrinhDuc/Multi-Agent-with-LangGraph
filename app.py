@@ -38,7 +38,7 @@ async def get_session(user_id: str = Query(...)):
 # To run the FastAPI application, use the following command in the terminal:
 # Make sure you are in the directory containing `app.py`.
 
-# Command:uvicorn app:app --host 127.0.0.1 --port 8000 --reload
+# Command: uvicorn app:app --host 127.0.0.1 --port 8000 --reload
 # 
 
 @app.get("/message")
