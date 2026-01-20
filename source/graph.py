@@ -181,7 +181,17 @@ class GraphEcommerce:
       # end_on=("human", "tool")
     )
     return {"messages": trimmed_messages}
+  
+  def chatchit_node(self, state: MainState):
+    question = state['question'].content
+    messages = [
+      SystemMessage(content=PROMPT_SYSTEM['prompt_sys']),
+      HumanMessage(content=f"""Câu hỏi của khách hàng: {question}.""")
+    ]
 
+    response = llm.invoke(input=messages)
+    return {"messages": [response]}
+    
   def supervisor_node(self, state: MainState): 
     question = state['question'].content
     history = [{'role': msg.type, 'content': msg.content} for msg in state['messages']]
@@ -203,6 +213,7 @@ class GraphEcommerce:
     graph = StateGraph(MainState)
 
     graph.add_node("trim_messages", self.trim_messages_node)
+    graph.add_node("chatchit", self.chatchit_node)
     graph.add_node("supervisor", self.supervisor_node)
     graph.add_node("searcher", self.search_subgraph)
     graph.add_node("orderer", self.order_subgraph)
@@ -216,7 +227,8 @@ class GraphEcommerce:
       {
         "search": "searcher",
         "order": "orderer",
-        "compare": "comparer"
+        "compare": "comparer",
+        "chatchit": "chatchit",
       }
     )
     

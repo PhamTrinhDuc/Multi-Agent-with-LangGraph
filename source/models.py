@@ -4,12 +4,13 @@ from typing import Literal, Dict, Any
 
 class RouterDecision(BaseModel): 
   question: str = Field(description="Câu hỏi gốc từ user hoặc đã được rewrite lại dựa vào lịch sử. Viết rõ ràng, chi tiết lại tên sản phẩm")
-  next_action: Literal["search", "order", "compare"] = \
+  next_action: Literal["search", "order", "compare", "chatchit"] = \
       Field(description="""
             Bước tiếp theo cần được thực hiện. 
             `search`: khi câu hỏi cần hỏi, tìm kiếm thông tin sản phẩm
             `order`: Khi user muốn đặt hàng, chốt đơn
             `compare`: Khi user muốn so sánh sản phẩm với sản phẩm bên thứ 3 hoặc so sánh các sản phẩm với nhau
+            `chatchit`: Khi câu hỏi không liên quan đến sản phẩm, hoặc không thể thực hiện các bước trên
             """)
   reason: str = Field(description="Lí do chọn bước tiếp theo")
 

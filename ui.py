@@ -20,7 +20,14 @@ st.markdown("""
         background-color: #f5f5f5;
     }
     .stTextInput > div > div > input {
-        background-color: white;
+        background-color: white !important;
+        color: #000000 !important;
+        border: 2px solid #1976d2 !important;
+        padding: 0.75rem !important;
+        font-size: 1rem !important;
+    }
+    .stTextInput > div > div > input::placeholder {
+        color: #999999 !important;
     }
     .chat-message {
         padding: 1rem;
