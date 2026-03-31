@@ -18,10 +18,14 @@ class ElasticQueryEngine:
 
     def __post_init__(self):
         self.client = Elasticsearch(
-          hosts=[f"http://{Config.ELS_HOST}:{Config.ELS_PORT}"], 
+            hosts=[f"http://{Config.ELS_HOST}:{Config.ELS_PORT}"], 
+            basic_auth=("elastic", "your_password"),
+            verify_certs=False   
         )
         self.async_client = AsyncElasticsearch(
-          hosts=[f"http://{Config.ELS_HOST}:{Config.ELS_PORT}"]
+            hosts=[f"http://{Config.ELS_HOST}:{Config.ELS_PORT}"],
+            basic_auth=("elastic", "your_password"),
+            verify_certs=False
         )
 
         if not self._index_exists():

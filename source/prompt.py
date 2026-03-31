@@ -132,6 +132,4 @@ PROMPT_SYSTEM = {
 
     Sau khi khách hàng xác nhận, hãy tạo 1 link để họ chuyển sang phần thanh toán đơn hàng. Link có dạng: "https://payment.example.com/order?product_id={product_id}&quantity={quantity}"
     """
-
-
 }

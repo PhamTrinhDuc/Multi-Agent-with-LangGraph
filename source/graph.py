@@ -32,8 +32,8 @@ class SearchSubGraph:
   def search_node(self, state: SearchState): 
     demands = extract_info(query_user=state['question'].content, type_client='openai', tool_call='search_products',)
     demands = {**demands, "name": demands.get('product', '')}
-    out_text, _ = self.retriever.query(demands=demands)
-    return {"context": out_text}
+    out_text, products_info = self.retriever.query(demands=demands)
+    return {"context": out_text, "products": products_info}
   
   def responder_node(self, state: SearchState): 
     question = state['question'].content
@@ -104,7 +104,7 @@ class CompareSubGraph:
         "recommendation": response.recommendation
       })
       return {
-        'messages': [AIMessage(content=formated_comparison)]
+        'messages': [AIMessage(content=formated_comparison['recommendation'])]
       }
     
     except Exception as e:
@@ -133,17 +133,24 @@ class OrderSubGraph:
   def order_node(self, state: OrderState): 
     try:
       question = state['question'].content
+      
+      # Use retriever to fetch product specs directly 
+      demands = extract_info(
+        query_user=question,
+        tool_call='order_product',
+        prompt_sys=PROMPT_SYSTEM['prompt_extract_order'],
+        type_client='groq'
+      )
+      demands = {**demands, "top_k": 3, "name": demands.get('product', '')}
+      out_text, products_info = retriever.query(demands=demands)
+
       messages = [
-        SystemMessage(content=PROMPT_SYSTEM['prompt_order']),
+        SystemMessage(content=PROMPT_SYSTEM['prompt_order'] + f"\nThông tin sản phẩm tìm thấy trong kho: {out_text}"),
         HumanMessage(content=f"""Câu hỏi của khách hàng: {question}.""")
       ]
-      agent = create_agent(
-        model=self.llm,
-        tools=[RetrieverTool(tool_call='order_product')],
-        system_prompt=PROMPT_SYSTEM['prompt_order'],
-      )
-      response = agent.invoke(input={"messages": messages})
-      return {"messages": response['messages']}
+      
+      response = self.llm.invoke(input=messages)
+      return {"messages": [response], "products": products_info, "is_order": True}
     
     except Exception as e:
       logger.error(f"Error in order_node: {str(e)}")
@@ -203,6 +210,7 @@ class GraphEcommerce:
     ]
     
     response = self.llm_structured.invoke(input=messages)
+    print(f"Router decision: {response.next_action}")
     print("Question after router rewrite:", response.question)
     return {"next_action": response.next_action, 'question': HumanMessage(response.question)}
 

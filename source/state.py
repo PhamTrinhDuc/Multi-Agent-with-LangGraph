@@ -6,6 +6,7 @@ class SearchState(TypedDict):
   question: HumanMessage
   context: str
   messages: Annotated[list, add_messages]
+  products: list
 
 class CompareState(TypedDict): 
   question: HumanMessage
@@ -21,9 +22,11 @@ class OrderState(TypedDict):
   quantity: int
   order_status: str
   messages: Annotated[list, add_messages]
+  products: list
 
 class MainState(TypedDict): 
   question: HumanMessage
   messages: Annotated[list, add_messages]
   next_action: str
+  products: list
 
